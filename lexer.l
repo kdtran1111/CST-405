@@ -11,7 +11,7 @@ int chars = 0;
 int lines = 1;
 
 %}
-// Token Definitions
+ /* Token Definitions */
 letter      [a-zA-Z]
 digit       [0-9]
 errorID     {digit}({letter}|{digit})*   
@@ -24,7 +24,7 @@ STRING      \"([^\"\\]|\\.)*\"
 CHAR		\'[a-zA-Z]\'
 ArithmeticOperator    [-+*/]
 
-//Rule Section (Patterns and Actions)
+ /*Rule Section (Patterns and Actions) */
 %%
 "/*"    {
             int c;
@@ -37,7 +37,7 @@ ArithmeticOperator    [-+*/]
                 }
             }
         }
-//Keyword Matching
+ /*Keyword Matching */
 "if"        { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); }
 "else"      { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); }
 "switch"    { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); }
@@ -52,7 +52,7 @@ ArithmeticOperator    [-+*/]
 "return"    { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); }
 "write"		{ words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); }
 
-//Data Types, this categoriez which is which and output the content
+ /*Data Types, this categoriez which is which and output the content*/
 int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 printf("%s : TYPE\n", yytext);
 		}
