@@ -56,6 +56,7 @@ ArithmeticOperator    [-+*/]
 
 int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 printf("%s : TYPE\n", yytext);
+		 yylval.string = strdup(yytext);
 		 return TYPE;
 		}
 		
@@ -88,6 +89,7 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 
 {ID}	{words++; chars += strlen(yytext);
 		 printf("%s : ID\n", yytext);
+		 yylval.string = strdup(yytext);
 		 return ID;
 		}
 
