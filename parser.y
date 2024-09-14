@@ -2,11 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "Symbol_Table.h"
 
 extern int yylex();
 extern int yyparse();
 extern FILE* yyin;
 extern int lines;
+
+SymbolTable* symbol_table;
 
 void yyerror(const char* s) {
     fprintf(stderr, "Parse error: %s\n", s);
@@ -35,6 +38,8 @@ void yyerror(const char* s) {
 %token <char> SYMBOL
 %token <string> ID
 
+%printer { fprintf(yyoutput, "%s", $$); } ID;
+
 %%
 
 program:
@@ -55,7 +60,27 @@ VarDeclList:{/* empty/do nothing */}
 VarDecl:
     TYPE ID SEMICOLON
     {
-        printf("PARSER: Recognized Declaration Statement\n");
+        printf("PARSER: Recognized variable declaration: %s\n", $2);
+        
+        if (lookup(symbol_table, $2) == 0)
+        {
+             printf("here");
+             Symbol* new_symbol = malloc(sizeof(Symbol));
+             new_symbol->type = malloc(strlen($1) + 1); 
+             strcpy(new_symbol->type, $1);
+             new_symbol->value = 0;
+
+             insert(symbol_table, $2, new_symbol);
+
+             print_table(symbol_table);
+        }
+        else
+        {
+            printf("ERROR ON LINE %d: ID %s has already been defined\n", lines, $2);
+
+            exit(0);
+        }
+        
     }
     |
     TYPE ID
@@ -117,6 +142,16 @@ Operand:
 int main() {
     // Initialize file or input source
     yyin = fopen("testProg.cmm", "r");
+
+    symbol_table = create_table(10);
+    if (symbol_table == NULL) {
+        perror("Failed to create symbol table");
+        fclose(yyin);
+        exit(1);
+    }
+    else{
+    printf("Symbol Table Created\n");
+    }
 
     // Start parsing
     if (yyparse() == 0) {
