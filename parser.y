@@ -6,6 +6,7 @@
 extern int yylex();
 extern int yyparse();
 extern FILE* yyin;
+extern int lines;
 
 void yyerror(const char* s) {
     fprintf(stderr, "Parse error: %s\n", s);
@@ -37,19 +38,80 @@ void yyerror(const char* s) {
 %%
 
 program:
-    statement
+    VarDeclList StmntList
     {
         printf("The PARSER has started\n");
     }
     ;
 
-statement:
-    ID
+VarDeclList:{/* empty/do nothing */}
+    |
+    VarDecl VarDeclList
     {
-        printf("PARSER: Recognized ID\n"); // Add newline for better output formatting
+        //printf("PARSER: Identified VardeclList\n");
     }
     ;
 
+VarDecl:
+    TYPE ID SEMICOLON
+    {
+        printf("PARSER: Recognized Declaration Statement\n");
+    }
+    |
+    TYPE ID
+    {
+        fprintf(stderr, "PARSER_ERROR: Missing Semicolon at line %d\n", lines);
+    }
+    |
+    TYPE INT SEMICOLON
+    {
+        fprintf(stderr, "PARSER_ERROR: Invalid Identifier Name %d\n", lines);
+    }
+
+StmntList:{/* emoty/do nothing*/}
+    |
+    Stmnt StmntList
+    {
+        printf("PARSER: Recognized Statement List\n");
+    }
+
+Stmnt:
+    ID ASSIGNMENT_OPERATOR Expr SEMICOLON
+    {
+        printf("PARSER Recognized Assignment Statement\n");
+    }
+    |
+    ID ASSIGNMENT_OPERATOR Expr
+    {
+        fprintf(stderr, "PARSER_ERROR: Missing Semicolon at line %d\n", lines);
+    }
+
+Expr:
+    Operand ARITHMETIC_OPERATOR Operand 
+    {
+        printf("PARSER: Recognized Operation\n");
+    }
+    |
+    INT
+    {
+        printf("PARSER: Recognized INT\n");
+    }
+    |
+    ID
+    {
+        printf("PARSER: Recognized ID\n");
+    }
+
+Operand:
+    ID
+    {
+        printf("PARSER: Recognized ID operand\n");
+    }
+    |
+    INT
+    {
+        printf("PARSER: Recognized INT operand\n");
+    }
 %%
 
 int main() {
