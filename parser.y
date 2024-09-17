@@ -64,7 +64,7 @@ VarDecl:
         
         if (lookup(symbol_table, $2) == 0)
         {
-             printf("here");
+             printf("Current Symbol Table\n");
              Symbol* new_symbol = malloc(sizeof(Symbol));
              new_symbol->type = malloc(strlen($1) + 1); 
              strcpy(new_symbol->type, $1);
