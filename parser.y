@@ -64,7 +64,6 @@ VarDecl:
         
         if (lookup(symbol_table, $2) == 0)
         {
-             printf("Current Symbol Table\n");
              Symbol* new_symbol = malloc(sizeof(Symbol));
              new_symbol->type = malloc(strlen($1) + 1); 
              strcpy(new_symbol->type, $1);
@@ -114,7 +113,12 @@ Stmnt:
 Expr:
     Operand ARITHMETIC_OPERATOR Operand 
     {
-        printf("PARSER: Recognized Operation\n");
+        printf("PARSER: Recognized Simple Operation\n");
+    }
+    |
+    Operand ARITHMETIC_OPERATOR Expr
+    {
+        printf("PARSER: Recognized Complex Operation\n");
     }
     |
     INT
@@ -126,6 +130,7 @@ Expr:
     {
         printf("PARSER: Recognized ID\n");
     }
+
 
 Operand:
     ID
