@@ -63,6 +63,7 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 
 {INT}	{words++; chars += strlen(yytext);
 			  printf("%s : INT\n",yytext);
+			  yylval.intval = atoi(yytext);
 			  return INT;
 			}
 
@@ -95,6 +96,7 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 
 {ArithmeticOperator} 	{ chars ++;
 		 	printf("%s : ARITHMETICOPERATOR\n", yytext);
+			yylval.string = strdup(yytext);
 			return ARITHMETIC_OPERATOR;
 			}
 
@@ -102,11 +104,11 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 "||"		{chars += strlen(yytext); printf("%s : LOGICOPERATOR\n", yytext); return LOGIC_OPERATOR;}
 "!"		{chars += strlen(yytext); printf("%s : LOGICOPERATOR\n", yytext); return LOGIC_OPERATOR;}
 
-"="         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); return ASSIGNMENT_OPERATOR; }
-"+="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); return ASSIGNMENT_OPERATOR; }
-"-="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); return ASSIGNMENT_OPERATOR; }
-"*="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); return ASSIGNMENT_OPERATOR; }
-"/="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); return ASSIGNMENT_OPERATOR; }
+"="         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
+"+="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
+"-="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
+"*="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
+"/="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
 
 
 "<="        { chars += strlen(yytext); printf("%s : RELATIONAL_OPERATOR\n", yytext); return RELATIONAL_OPERATOR; }
