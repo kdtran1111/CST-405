@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "Symbol_Table.h"
+#include "AST.h"
 
 extern int yylex();
 extern int yyparse();
@@ -10,6 +11,7 @@ extern FILE* yyin;
 extern int lines;
 
 SymbolTable* symbol_table;
+ASTNode* root;
 
 void yyerror(const char* s) {
     fprintf(stderr, "Parse error: %s\n", s);
@@ -21,16 +23,18 @@ void yyerror(const char* s) {
 
 %union {
     char* string;
+    struct ASTNode* ast;
+    int intval;
 }
 
 /* Define token types */
 %token <string> KEYWORD
 %token <string> TYPE
-%token <int> INT
+%token <intval> INT
 %token <int> FLOAT
 %token <string> STRING
 %token <char> CHAR
-%token <char> ARITHMETIC_OPERATOR
+%token <string> ARITHMETIC_OPERATOR
 %token <string> LOGIC_OPERATOR
 %token <string> ASSIGNMENT_OPERATOR
 %token <string> RELATIONAL_OPERATOR
@@ -39,13 +43,17 @@ void yyerror(const char* s) {
 %token <string> ID
 
 %printer { fprintf(yyoutput, "%s", $$); } ID;
-
+%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr
 %%
 
 program:
     VarDeclList StmntList
     {
         printf("The PARSER has started\n");
+        root = malloc(sizeof(ASTNode));
+		root->type = NodeType_program;
+		root->program.VarDeclList = $1;
+		root->program.StmntList = $2;
     }
     ;
 
@@ -53,6 +61,10 @@ VarDeclList:{/* empty/do nothing */}
     |
     VarDecl VarDeclList
     {
+        $$ = malloc(sizeof(ASTNode));
+		$$->type = NodeType_VarDeclList;
+		$$->VarDeclList.VarDecl = $1;
+		$$->VarDeclList.VarDeclList = $2;
         //printf("PARSER: Identified VardeclList\n");
     }
     ;
@@ -68,8 +80,12 @@ VarDecl:
              new_symbol->type = malloc(strlen($1) + 1); 
              strcpy(new_symbol->type, $1);
              new_symbol->value = 0;
-
              insert(symbol_table, $2, new_symbol);
+
+             $$ = malloc(sizeof(ASTNode));
+			 $$->type = NodeType_VarDecl;
+			 $$->VarDecl.type = strdup($1);
+			 $$->VarDecl.id = strdup($2);
 
              print_table(symbol_table);
         }
@@ -96,12 +112,22 @@ StmntList:{/* emoty/do nothing*/}
     |
     Stmnt StmntList
     {
+        $$ = malloc(sizeof(ASTNode));
+		$$->type = NodeType_StmntList;
+		$$->StmntList.stmnt = $1;
+		$$->StmntList.StmntList = $2;
         printf("PARSER: Recognized Statement List\n");
     }
 
 Stmnt:
     ID ASSIGNMENT_OPERATOR Expr SEMICOLON
     {
+        printf("PARSERAOKFNOEIFWEOFINEWO: %s\n", $2);
+        $$ = malloc(sizeof(ASTNode));
+		$$->type = NodeType_Stmnt;
+		$$->Stmnt.id = strdup($1);
+		$$->Stmnt.op = strdup($2);
+		$$->Stmnt.expression = $3;
         printf("PARSER Recognized Assignment Statement\n");
     }
     |
@@ -110,38 +136,32 @@ Stmnt:
         fprintf(stderr, "PARSER_ERROR: Missing Semicolon at line %d\n", lines);
     }
 
-Expr:
-    Operand ARITHMETIC_OPERATOR Operand 
-    {
-        printf("PARSER: Recognized Simple Operation\n");
-    }
-    |
-    Operand ARITHMETIC_OPERATOR Expr
-    {
-        printf("PARSER: Recognized Complex Operation\n");
-    }
-    |
-    INT
-    {
-        printf("PARSER: Recognized INT\n");
-    }
-    |
-    ID
-    {
-        printf("PARSER: Recognized ID\n");
-    }
+Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
+                        
+						$$ = malloc(sizeof(ASTNode));
+						$$->type = NodeType_Expr;
+						$$->Expr.left = $1;
+						$$->Expr.right = $3;
+						$$->Expr.op = strdup($2);
+						
+						// Set other fields as necessary
+					  }
+ 					
+	| ID { printf("ASSIGNMENT statement \n"); 
+			$$ = malloc(sizeof(ASTNode));
+			$$->type = NodeType_SimpleID;
+			$$->SimpleID.id = strdup($1);
+			// Set other fields as necessary	
+		}
+	| INT { 
+				printf("PARSER: Recognized number: %d\n", $1);
+				$$ = malloc(sizeof(ASTNode));
+				$$->type = NodeType_SimpleExpr;
+				$$->SimpleExpr.value = $1;
+				// Set other fields as necessary
+			 }
+;
 
-
-Operand:
-    ID
-    {
-        printf("PARSER: Recognized ID operand\n");
-    }
-    |
-    INT
-    {
-        printf("PARSER: Recognized INT operand\n");
-    }
 %%
 
 int main() {
@@ -162,6 +182,7 @@ int main() {
     if (yyparse() == 0) {
         // Successfully parsed
 		printf("Parsing successful!\n");
+        print_ast(root, 1);
     } else {
         fprintf(stderr, "Parsing failed\n");
     }
