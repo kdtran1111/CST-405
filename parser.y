@@ -4,12 +4,12 @@
 #include <string.h>
 #include "Symbol_Table.h"
 #include "AST.h"
-
+#include "semantic.h"
 extern int yylex();
 extern int yyparse();
 extern FILE* yyin;
 extern int lines;
-
+extern TAC* tacHead;  //Declared the head of the Linkedlist of TAC entries
 SymbolTable* symbol_table;
 ASTNode* root;
 
@@ -55,6 +55,15 @@ program:
 		root->program.VarDeclList = $1;
 		root->program.StmntList = $2;
     }
+     |
+    StmntList
+    {
+        printf("PARSER: Program without variable declarations\n");
+        root = malloc(sizeof(ASTNode));
+        root->type = NodeType_program;
+        root->program.StmntList = $1;
+    }
+    ;
     ;
 
 VarDeclList:{/* empty/do nothing */}
@@ -114,7 +123,7 @@ StmntList:{/* emoty/do nothing*/}
     {
         $$ = malloc(sizeof(ASTNode));
 		$$->type = NodeType_StmntList;
-		$$->StmntList.stmnt = $1;
+		$$->StmntList.Stmnt = $1;
 		$$->StmntList.StmntList = $2;
         printf("PARSER: Recognized Statement List\n");
     }
@@ -127,8 +136,9 @@ Stmnt:
 		$$->type = NodeType_Stmnt;
 		$$->Stmnt.id = strdup($1);
 		$$->Stmnt.op = strdup($2);
-		$$->Stmnt.expression = $3;
+		$$->Stmnt.Expr = $3;
         printf("PARSER Recognized Assignment Statement\n");
+        
     }
     |
     ID ASSIGNMENT_OPERATOR Expr
@@ -153,13 +163,15 @@ Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
 			$$->SimpleID.id = strdup($1);
 			// Set other fields as necessary	
 		}
-	| INT { 
-				printf("PARSER: Recognized number: %d\n", $1);
-				$$ = malloc(sizeof(ASTNode));
-				$$->type = NodeType_SimpleExpr;
-				$$->SimpleExpr.value = $1;
-				// Set other fields as necessary
-			 }
+	| INT SEMICOLON
+    {
+        printf("PARSER: Recognized integer expression: %d\n", $1);
+        
+        print_table(symbol_table);
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_SimpleExpr;
+        $$->SimpleExpr.value = $1;
+    }
 ;
 
 %%
@@ -167,7 +179,7 @@ Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
 int main() {
     // Initialize file or input source
     yyin = fopen("testProg.cmm", "r");
-
+    
     symbol_table = create_table(10);
     if (symbol_table == NULL) {
         perror("Failed to create symbol table");
@@ -186,7 +198,15 @@ int main() {
     } else {
         fprintf(stderr, "Parsing failed\n");
     }
+    printf("---Semantic Analysis---\n");
+    semanticAnalysis(root,symbol_table);
+    printf("Writing TAC into TAC.ir\n");
+    printTACToFile("TAC.ir", tacHead);
+    if (tacHead == NULL) {
+    printf("Error: TAC head is NULL. No instructions to write.\n");
+    }
 
+    printf("Writing TAC into TAC.ir successful\n");
     fclose(yyin);
     return 0;
 }

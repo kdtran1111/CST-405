@@ -37,7 +37,7 @@ void insert (SymbolTable* table, const char* key, Symbol* value) {
         new_node->key = malloc(strlen(key) + 1);
         strcpy(new_node->key, key);
 
-        new_node->value = value;
+        new_node->var = value;
         new_node->next = NULL;
         table->table[index] = new_node; 
     }
@@ -51,7 +51,7 @@ void insert (SymbolTable* table, const char* key, Symbol* value) {
         SymbolNode* new_node = malloc(sizeof(SymbolNode));
         new_node->key = malloc(strlen(key) + 1);
         strcpy(new_node->key, key);
-        new_node->value = value;
+        new_node->var = value;
         new_node->next = NULL;
         current->next = new_node;
 
@@ -62,7 +62,7 @@ void print_table(SymbolTable* table) {
     for (int i = 0; i < table->size; i++) {
         SymbolNode* current = table->table[i];
         while (current != NULL) {
-            printf("Identifier: %s, Type: %s, Value: %d\n", current->key, current->value->type, current->value->value);
+            printf("Identifier: %s, Type: %s, Value: %d\n", current->key, current->var->type, current->var->value);
             current = current->next;
         }
     }
@@ -86,4 +86,28 @@ int lookup(SymbolTable* table, const char* key) {
 }
 
 
+// New function to get the Symbol* by key 
+Symbol* getSymbol(SymbolTable* table, const char* key) {
+    int index = hash(key, table->size);
+    SymbolNode* current = table->table[index];
 
+    while (current != NULL) {
+        if (strcmp(current->key, key) == 0) {
+            return current->var;
+        } else {
+            current = current->next;
+        }
+    }
+    return NULL;  // Return NULL if the symbol is not found
+}
+// New function to update the value of a symbol. Not yet needed. Will eventually be add into effect
+void updateValue(SymbolTable* table, const char* key, int new_value) {
+    
+    Symbol* symbol = getSymbol(table, key);
+    if (symbol != NULL) {
+        symbol->value = new_value;  // Update the value of the symbol
+        printf("Updated value of %s to %d\n", key, new_value);
+    } else {
+        printf("ERROR: Symbol %s not found in the symbol table\n", key);
+    }
+}

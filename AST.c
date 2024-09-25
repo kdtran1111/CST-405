@@ -31,13 +31,13 @@ void print_ast(ASTNode* node, int indent)
 
         case NodeType_StmntList:
             printf("Statement List:\n");
-            print_ast(node->StmntList.stmnt, indent + 1);
+            print_ast(node->StmntList.Stmnt, indent + 1);
             print_ast(node->StmntList.StmntList, indent + 1);
             break;
 
         case NodeType_Stmnt:
             printf("Assign Statement: ID = %s, Operator = %s\n", node->Stmnt.id, node->Stmnt.op);
-            print_ast(node->Stmnt.expression, indent + 1);
+            print_ast(node->Stmnt.Expr, indent + 1);
             break;
 
         case NodeType_Expr:

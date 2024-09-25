@@ -10,7 +10,7 @@ typedef struct Symbol{
 // Define your symbol table struct
 typedef struct SymbolNode {
     char* key;
-    struct Symbol* value;
+    struct Symbol* var;
     struct SymbolNode* next; 
 } SymbolNode;
 
@@ -27,5 +27,7 @@ void insert(SymbolTable* table, const char* key, Symbol* value);
 void print_table(SymbolTable* table);
 int lookup(SymbolTable* table, const char* key);
 // void free_table(SymbolTable* table);
+Symbol* getSymbol(SymbolTable* table, const char* key);
+void updateValue(SymbolTable* table, const char* key, int new_value);
 
 #endif // SYMBOL_TABLE_H

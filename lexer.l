@@ -26,6 +26,7 @@ ws          {delim}+
 STRING      \"([^\"\\]|\\.)*\"
 CHAR		\'[a-zA-Z]\'
 ArithmeticOperator    [-+*/]
+
 %%
 "/*"    {
             int c;

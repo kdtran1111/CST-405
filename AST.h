@@ -44,7 +44,7 @@ typedef struct ASTNode
 
         struct
         {
-            struct ASTNode* stmnt;
+            struct ASTNode* Stmnt; //was stmnt
             struct ASTNode* StmntList;
         }StmntList;
 
@@ -52,7 +52,7 @@ typedef struct ASTNode
         {   
             char* id;
             char* op;
-            struct ASTNode* expression;
+            struct ASTNode* Expr; //was expression
         }Stmnt;
 
         struct
@@ -60,6 +60,7 @@ typedef struct ASTNode
             char* op;
             struct ASTNode* left;
             struct ASTNode* right;
+            struct ASTNode* SimpleExpr;
         }Expr;
 
         struct
