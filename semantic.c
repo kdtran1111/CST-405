@@ -279,7 +279,7 @@ void printTACToFile(const char* filename, TAC* tac) {
         //avoid printing NULL into the TAC when it's simpleExpr 
         else {
 
-        fprintf(file, "%s = %s %s\n", current->result, current->arg1, current->op);
+        fprintf(file, "%s = %s\n", current->result, current->arg1);
         current = current->next; 
         }
     }
