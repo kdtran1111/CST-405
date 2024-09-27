@@ -52,7 +52,7 @@ ArithmeticOperator    [-+*/]
 "continue"  { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
 "goto"      { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
 "return"    { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
-"write"     { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
+"write"     { words++; chars += strlen(yytext); printf("%s : WRITE\n", yytext); return WRITE; }
 
 
 int|char|string|float|bool	{words++; chars += strlen(yytext);

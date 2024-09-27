@@ -29,6 +29,7 @@ void yyerror(const char* s) {
 
 /* Define token types */
 %token <string> KEYWORD
+%token <string> WRITE
 %token <string> TYPE
 %token <intval> INT
 %token <int> FLOAT
@@ -132,7 +133,6 @@ StmntList:{/* emoty/do nothing*/}
 Stmnt:
     ID ASSIGNMENT_OPERATOR Expr SEMICOLON
     {
-        printf("PARSERAOKFNOEIFWEOFINEWO: %s\n", $2);
         $$ = malloc(sizeof(ASTNode));
 		$$->type = NodeType_Stmnt;
 		$$->Stmnt.id = strdup($1);
@@ -140,6 +140,15 @@ Stmnt:
 		$$->Stmnt.Expr = $3;
         printf("PARSER Recognized Assignment Statement\n");
         
+    }
+    |
+    WRITE ID SEMICOLON
+    {
+        printf("PARSER: Recognized Write Statement: %s\n", $2);
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_WriteStmnt;
+        $$->WriteStmnt.id = strdup($2);
+
     }
     |
     ID ASSIGNMENT_OPERATOR Expr

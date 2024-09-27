@@ -53,7 +53,9 @@ void print_ast(ASTNode* node, int indent)
         case NodeType_SimpleID:
             printf("Simple ID: id = %s\n", node->SimpleID.id);
             break;
-
+        case NodeType_WriteStmnt:
+            printf("Write Statement: id = %s\n", node->WriteStmnt.id);
+            break;
         default:
             printf("Unknown node type!\n");
             break;
@@ -115,6 +117,11 @@ void freeAST(ASTNode* node) {
 
         case NodeType_Operand:
             // No dynamic allocation in Operand to free
+            break;
+
+        case NodeType_WriteStmnt:
+            // Free the ID string
+            free(node->WriteStmnt.id);
             break;
 
         default:
