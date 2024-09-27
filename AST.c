@@ -59,3 +59,69 @@ void print_ast(ASTNode* node, int indent)
             break;
     }   
 }
+
+//Trying out freeing ASTTree
+void freeAST(ASTNode* node) {
+    if (!node) return;
+
+    switch (node->type) {
+        case NodeType_program:
+            // Free the program's variable declaration list and statement list
+            freeAST(node->program.VarDeclList);
+            freeAST(node->program.StmntList);
+            break;
+
+        case NodeType_VarDeclList:
+            // Free individual variable declarations and the list itself
+            freeAST(node->VarDeclList.VarDecl);
+            freeAST(node->VarDeclList.VarDeclList);
+            break;
+
+        case NodeType_VarDecl:
+            // Free variable type and name strings
+            free(node->VarDecl.type);
+            free(node->VarDecl.id);
+            break;
+
+        case NodeType_StmntList:
+            // Free statement and statement list
+            freeAST(node->StmntList.Stmnt);
+            freeAST(node->StmntList.StmntList);
+            break;
+
+        case NodeType_Stmnt:
+            // Free statement's ID and operator strings
+            free(node->Stmnt.id);
+            free(node->Stmnt.op);
+            freeAST(node->Stmnt.Expr); // Free the associated expression
+            break;
+
+        case NodeType_Expr:
+            // Free left and right expressions and the simple expression if any
+            freeAST(node->Expr.left);
+            freeAST(node->Expr.right);
+            // free(node->Expr.op); // Assuming op is not dynamically allocated
+            freeAST(node->Expr.SimpleExpr); // Free the simple expression if it's a pointer
+            break;
+
+        case NodeType_SimpleExpr:
+            // No dynamic allocation in SimpleExpr to free
+            break;
+
+        case NodeType_SimpleID:
+            // Free the ID string
+            free(node->SimpleID.id);
+            break;
+
+        case NodeType_Operand:
+            // No dynamic allocation in Operand to free
+            break;
+
+        default:
+            // Handle any unexpected node types
+            fprintf(stderr, "Warning: Unrecognized node type encountered during freeAST.\n");
+            break;
+    }
+
+    free(node); // Free the current node after all children have been freed
+}

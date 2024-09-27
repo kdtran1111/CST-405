@@ -82,5 +82,5 @@ typedef struct ASTNode
 }ASTNode;
 
 void print_ast(ASTNode* node, int indent);
-
+void freeAST(ASTNode* node);
 #endif

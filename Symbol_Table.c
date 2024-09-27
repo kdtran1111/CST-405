@@ -63,6 +63,7 @@ void print_table(SymbolTable* table) {
         SymbolNode* current = table->table[i];
         while (current != NULL) {
             printf("Identifier: %s, Type: %s, Value: %d\n", current->key, current->var->type, current->var->value);
+            printf("Address: %p\n", (void*)current);
             current = current->next;
         }
     }
@@ -105,9 +106,29 @@ void updateValue(SymbolTable* table, const char* key, int new_value) {
     
     Symbol* symbol = getSymbol(table, key);
     if (symbol != NULL) {
+         printf("Before update: %s has value %d at address %p\n", key, symbol->value, (void*)symbol);
         symbol->value = new_value;  // Update the value of the symbol
-        printf("Updated value of %s to %d\n", key, new_value);
+        printf("Updated value of %s to %d at address: %p\n", key, new_value,(void*)symbol);
+        print_table(table);
     } else {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }
 }
+/*
+// Function to free the symbol table
+void freeSymbolTable(SymbolTable* table) {
+    for (int i = 0; i < table->size; i++) {
+        Symbol* sym = table->table[i];
+        while (sym != 0) {
+            Symbol* nextSym = sym->next;
+            free(sym->name);
+            free(sym->type);
+            // Free other dynamically allocated fields of Symbol
+            free(sym);
+            sym = nextSym;
+        }
+    }
+    free(table->table);
+    free(table);
+}
+*/

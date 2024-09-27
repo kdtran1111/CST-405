@@ -29,5 +29,6 @@ int lookup(SymbolTable* table, const char* key);
 // void free_table(SymbolTable* table);
 Symbol* getSymbol(SymbolTable* table, const char* key);
 void updateValue(SymbolTable* table, const char* key, int new_value);
-
+//Free Table
+void freeSymbolTable(SymbolTable* table);
 #endif // SYMBOL_TABLE_H

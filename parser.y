@@ -97,6 +97,7 @@ VarDecl:
 			 $$->VarDecl.id = strdup($2);
 
              print_table(symbol_table);
+            
         }
         else
         {
@@ -149,10 +150,19 @@ Stmnt:
 Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
                         
 						$$ = malloc(sizeof(ASTNode));
+                         if ($$ == NULL) {
+                        fprintf(stderr, "Memory allocation failed\n");
+                        exit(1);  // Ensure proper exit if malloc fails
+                        }
 						$$->type = NodeType_Expr;
 						$$->Expr.left = $1;
 						$$->Expr.right = $3;
 						$$->Expr.op = strdup($2);
+
+                        if ($$->Expr.op == NULL) {
+                        fprintf(stderr, "Memory allocation for operator failed\n");
+                        exit(1);
+                        }
 						
 						// Set other fields as necessary
 					  }
@@ -163,14 +173,20 @@ Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
 			$$->SimpleID.id = strdup($1);
 			// Set other fields as necessary	
 		}
-	| INT SEMICOLON
+	| INT 
     {
         printf("PARSER: Recognized integer expression: %d\n", $1);
         
         print_table(symbol_table);
         $$ = malloc(sizeof(ASTNode));
+        /*if ($$->Expr.op == NULL) {
+        fprintf(stderr, "Memory allocation for variable initialization failed\n");
+        exit(1);
+        }
+        */
         $$->type = NodeType_SimpleExpr;
         $$->SimpleExpr.value = $1;
+        
     }
 ;
 
@@ -204,9 +220,15 @@ int main() {
     printTACToFile("TAC.ir", tacHead);
     if (tacHead == NULL) {
     printf("Error: TAC head is NULL. No instructions to write.\n");
-    }
+    }else {
 
     printf("Writing TAC into TAC.ir successful\n");
+    }
+    //Freeing the tree
+    //freeAST(root);
     fclose(yyin);
+    
+
+    
     return 0;
 }

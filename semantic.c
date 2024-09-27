@@ -33,7 +33,7 @@ void check_variable_initialized(SymbolTable* symbol_table, const char* id, int l
     
     if (symbol->value == 0) {
         char error_message[256];
-        snprintf(error_message, sizeof(error_message), "Variable '%s' used without being assigned a value", id);
+        snprintf(error_message, sizeof(error_message), "Variable '%s' used without being assigned a value, therefore default value is 0", id);
         semantic_error(error_message, lines);
     }
 }
@@ -48,13 +48,21 @@ void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* 
         semantic_error(error_message, lines);
     }
 
+
+    if (strcmp(symbol->type, "int") == 0 && expr->type != NodeType_Expr && expr->type != NodeType_SimpleExpr) {
+    // This will allow both integer literals and expressions
+    char error_message[256];
+    snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
+    semantic_error(error_message, lines);
+}
+    /*
     // Perform type checking based on the expression's type
     if (strcmp(symbol->type, "int") == 0 && expr->type != NodeType_SimpleExpr) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
         semantic_error(error_message, lines);
     }
-    
+    */
     if (strcmp(symbol->type, "float") == 0 && expr->type != NodeType_SimpleExpr) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is a float, but assigned a non-float value", id);
@@ -84,12 +92,15 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
             Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);
             if (symbol != NULL && node->Stmnt.Expr->type == NodeType_SimpleExpr) {
             // Assuming the expression has an integer literal, update the variable's value
+           
             updateValue(symbol_table, node->Stmnt.id, node->Stmnt.Expr->SimpleExpr.value);
-    }
+            printf("updateValue has no problem\n");
+            
+            
             // Generate TAC for the assignment statement
-            TAC* tac = generateTACForExpr(node->Stmnt.Expr);
-            appendTAC(&tacHead, tac);
-
+           // TAC* tac = generateTACForExpr(node->Stmnt.Expr);
+            //appendTAC(&tacHead, tac);
+            //printf("Tac is fine\n");
             // Automatically update the value in the symbol table
             //int resultValue = evaluateExpression(node->Stmnt.expression, symbol_table);
             //updateValue(symbol_table, node->Stmnt.id, resultValue);  // Update the value of the variable after the assignment
@@ -112,12 +123,12 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
             
             break;
 
-        default:
-            break;
+        //default:
+          //  break;
     }
 
     // Traverse the AST recursively
-    switch (node->type) {
+   // switch (node->type) {
         case NodeType_program:
             semanticAnalysis(node->program.VarDeclList, symbol_table);
             semanticAnalysis(node->program.StmntList, symbol_table);
@@ -136,24 +147,49 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
         default:
             break;
     }
+      if (node->type == NodeType_Expr || node->type == NodeType_SimpleExpr) {
+        TAC* tac = generateTACForExpr(node);
+        // Process or store the generated TAC
+        //printTAC(tac);
+        appendTAC(&tacHead,tac);
+    }
+
 }
 
 // Generate TAC for an expression
+// Implementation of the functions
 TAC* generateTACForExpr(ASTNode* expr) {
-     if (expr == NULL) {
+    if (expr == NULL) {
         printf("Error: Expression is NULL.\n");
         return NULL;
     }
     TAC* newTac = (TAC*)malloc(sizeof(TAC));
-    newTac->op = strdup(expr->Expr.op); // e.g., "+", "-", "*", etc.
-    newTac->arg1 = createOperand(expr->Expr.left);
-    newTac->arg2 = createOperand(expr->Expr.right);
-    newTac->result = createTempVar(); // Create a temporary variable for the result
-    newTac->next = NULL;
-    printf("Generated TAC: %s %s %s %s\n", newTac->op, newTac->arg1, newTac->arg2, newTac->result);  // Debug
+    if (!newTac) return NULL;
+    switch (expr-> type) {
+        case NodeType_Expr: {
+            printf("Generating TAC for expression\n");
+            newTac->op = strdup(expr->Expr.op);  // e.g., "+", "-", "*", etc.
+            newTac->arg1 = createOperand(expr->Expr.left);
+            newTac->arg2 = createOperand(expr->Expr.right);
+            newTac->result = createTempVar();  // Create a temporary variable for the result
+            newTac->next = NULL;
+            printf("Generated TAC: %s %s %s %s\n", newTac->op, newTac->arg1, newTac->arg2, newTac->result);  // Debug   
+            break;
+        }
+        case NodeType_SimpleExpr: {
+            printf("Generating TAC for simple expression\n");
+            char buffer[20];
+            snprintf(buffer, 20, "%d", expr->SimpleExpr.value);
+            newTac->arg1 = strdup(buffer);
+            newTac->op = "=";  // Assignment operator
+            newTac->arg2 = NULL;
+            newTac->result = createTempVar();
+            break;
+        }
+        // Add more cases if necessary...
+    }
     return newTac;
 }
-
 // Create a temporary variable
 char* createTempVar() {
     static int tempCounter = 0;
@@ -236,8 +272,16 @@ void printTACToFile(const char* filename, TAC* tac) {
 
     TAC* current = tac;
     while (current != NULL) {
+        if (current->arg2!=NULL) {
         fprintf(file, "%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
         current = current->next;
+        }
+        //avoid printing NULL into the TAC when it's simpleExpr 
+        else {
+
+        fprintf(file, "%s = %s %s\n", current->result, current->arg1, current->op);
+        current = current->next; 
+        }
     }
 
     fclose(file);
