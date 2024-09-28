@@ -5,6 +5,7 @@
 typedef struct Symbol{
     char* type;
     int value;
+    char* tempVar; //tempVar for t0,t1,etc...
 }Symbol;
 
 // Define your symbol table struct
@@ -28,6 +29,9 @@ void print_table(SymbolTable* table);
 int lookup(SymbolTable* table, const char* key);
 // void free_table(SymbolTable* table);
 Symbol* getSymbol(SymbolTable* table, const char* key);
+char* getTempVar(Symbol* symbol);
+//char* getTempVar(SymbolTable* table, const char* key);
+
 void updateValue(SymbolTable* table, const char* key, int new_value);
 //Free Table
 void freeSymbolTable(SymbolTable* table);

@@ -19,9 +19,10 @@ extern TAC* tacHead; // Global head of the TAC instructions list
 
 int allocateNextAvailableTempVar(int tempVars[]);
 void semanticAnalysis(ASTNode* node, SymbolTable* symTab);
-TAC* generateTACForExpr(ASTNode* expr); //returns the TAC for the expression to print on console
+TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table); //returns the TAC for the expression to print on console
 char* createTempVar();
-char* createOperand(ASTNode* node);
+//char* createOperand(ASTNode* node);
+char* createOperand(ASTNode* node, SymbolTable* symbol_table);
 void printTAC(TAC* tac);
 void initializeTempVars();
 void deallocateTempVar(int tempVars[], int index);
@@ -29,5 +30,5 @@ int allocateNextAvailableTempVar(int tempVars[]);
 void appendTAC(TAC** head, TAC* newInstruction);
 void printTACToFile(const char* filename, TAC* tac);
 // You can add more function declarations related to semantic analysis here
-
+TAC* generateTACForSimpleExpr(ASTNode* expr, SymbolTable* symbol_table);
 #endif // SEMANTIC_H
