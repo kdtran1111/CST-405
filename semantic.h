@@ -20,8 +20,9 @@ typedef struct TempVarMap {
     struct TempVarMap* next;
 } TempVarMap;
 
-int tempVars[20];
+extern int tempVars[20];
 extern TAC* tacHead; // Global head of the TAC instructions list
+extern char* currentID;
 
 int allocateNextAvailableTempVar(int tempVars[]);
 void semanticAnalysis(ASTNode* node, SymbolTable* symTab);

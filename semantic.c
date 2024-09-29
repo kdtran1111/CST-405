@@ -3,6 +3,8 @@
 #include <string.h>
 #include "semantic.h"
 
+int tempVars[20];
+char* currentID;
 TAC* tacHead = NULL;  // Global head of the TAC instructions list
 extern int declaredSymbol;
 extern int lines;
@@ -82,6 +84,8 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
             break;
 
         case NodeType_Stmnt:
+            currentID  = node->Stmnt.id;
+            printf("Semantic analysis for statement, curr ID is %s\n", node->Stmnt.id);
             check_variable_declared(symbol_table, node->Stmnt.id, lines);  // Check if variable is declared
             semanticAnalysis(node->Stmnt.Expr, symbol_table);        // Analyze the expression on the right-hand side
 
@@ -90,11 +94,11 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
             
             // Fetch the variable symbol to update
             Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);
-             int temp = lookup(symbol_table, node->Stmnt.id);
+            int temp = lookup(symbol_table, node->Stmnt.id);
             printf("Temp: %d\n",temp);
             if (symbol != NULL && node->Stmnt.Expr->type == NodeType_SimpleExpr) {
             // Assuming the expression has an integer literal, update the variable's value
-           
+
             updateValue(symbol_table, node->Stmnt.id, node->Stmnt.Expr->SimpleExpr.value);
             printf("updateValue has no problem\n");
             TAC* newTac = (TAC*)malloc(sizeof(TAC));
@@ -111,6 +115,7 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
             //newTac->result = getTempVar(symbol_table,);
             newTac->result = getTempVar(symbol);
             appendTAC(&tacHead,newTac);
+
             //newTac->result=createTempVar();
             printf("Generated in generateTAC in simpleExpr\n");
             }
@@ -196,10 +201,11 @@ TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table) {
     switch (expr->type) {
         case NodeType_Expr: {
             printf("Generating TAC for expression\n");
-            newTac->op = strdup(expr->Expr.op);  // e.g., "+", "-", "*", etc.
-            newTac->result = createTempVar();
-            
-            
+            newTac->op = strdup(expr->Expr.op); // e.g., "+", "-", "*", etc.
+            tempResult = createTempVar();
+
+            newTac->result = strdup(tempResult);
+            updateRegister(symbol_table, currentID, newTac->result);
             
             // Reuse temp vars for operands (x and y)
             newTac->arg1 = createOperand(expr->Expr.left, symbol_table);  // Left operand (e.g., t0 for x)
@@ -254,7 +260,7 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
 
     switch (node->type) {
         case NodeType_SimpleID: {
-            Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id);
+            Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id); //------
             if (symbol != NULL && symbol->tempVar != NULL) {
                 strcpy(operand, symbol->tempVar);
             } else {
@@ -330,24 +336,47 @@ void deallocateTempVar(int tempVars[], int index) {
 
 // Print the TAC instructions to a file
 void printTACToFile(const char* filename, TAC* tac) {
+    printf("--------------Printing TAC to file---------------\n");
+
     FILE* file = fopen(filename, "w");
     if (file == NULL) {
         perror("Error opening file");
         return;
     }
-
+    int cntr = 0;
+    TAC* previous = NULL;
     TAC* current = tac;
     while (current != NULL) {
-        if (current->arg2!=NULL) {
-        fprintf(file, "%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
-        current = current->next;
+
+        if (current->arg2!=NULL && current->arg1!=NULL) 
+        {
+
+            if (strcmp(current->arg2, "") == 0) 
+            {
+                current->arg2 = previous->result;    
+            }
+
+            fprintf(file, "%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
+            printf("%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
         }
         //avoid printing NULL into the TAC when it's simpleExpr 
         else {
 
         fprintf(file, "%s = %s\n", current->result, current->arg1);
-        current = current->next; 
+        printf("%s = %s\n", current->result, current->arg1);
         }
+
+        if (cntr == 1)
+        {
+            previous = current;
+            current = current->next;
+        }
+
+        else 
+        {
+            current = current->next; 
+        }
+        cntr++;
     }
 
     fclose(file);
@@ -359,7 +388,7 @@ char* createTempVar() {
     static int tempCounter = 0;
     char* tempVar = (char*)malloc(10 * sizeof(char));
     snprintf(tempVar, 10, "t%d", tempCounter++);
-     printf("Temp var created: %s\n", tempVar);
+    printf("Temp var created: %s\n", tempVar);
     return tempVar;
 }
 //char* tempVarForSimpExpr(SymbolTable symbol_table, ){

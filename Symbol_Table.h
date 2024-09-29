@@ -31,7 +31,7 @@ int lookup(SymbolTable* table, const char* key);
 Symbol* getSymbol(SymbolTable* table, const char* key);
 char* getTempVar(Symbol* symbol);
 //char* getTempVar(SymbolTable* table, const char* key);
-
+void updateRegister(SymbolTable* table, const char* key, char* registerName);
 void updateValue(SymbolTable* table, const char* key, int new_value);
 //Free Table
 void freeSymbolTable(SymbolTable* table);

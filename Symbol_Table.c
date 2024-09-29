@@ -160,6 +160,18 @@ void updateValue(SymbolTable* table, const char* key, int new_value) {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }
 }
+
+void updateRegister(SymbolTable* table, const char* key, char* registerName) {
+    Symbol* symbol = getSymbol(table, key);
+    if (symbol != NULL) {
+        symbol->tempVar = registerName;
+        print_table(table);
+
+
+    } else {
+        printf("ERROR: Symbol %s not found in the symbol table\n", key);
+    }
+}
 /*
 void updateTempVar(SymbolTable* table, const char* key, char* tempVar){
     Symbol
