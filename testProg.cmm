@@ -1,8 +1,10 @@
 int x;
 int y;
-int z;
-z=5;
-x=6;
-y=7;
-z = x + y;
-x = x - z;
+int a;
+int b;
+int c;
+x = 1;
+a = 12;
+b = 23 + 10;
+x = b + a + a + 1;
+
