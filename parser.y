@@ -29,7 +29,6 @@ void yyerror(const char* s) {
 
 /* Define token types */
 %token <string> KEYWORD
-%token <string> WRITE
 %token <string> TYPE
 %token <intval> INT
 %token <int> FLOAT
@@ -42,7 +41,7 @@ void yyerror(const char* s) {
 %token <char> SEMICOLON
 %token <char> SYMBOL
 %token <string> ID
-
+%token <string> WRITE
 %printer { fprintf(yyoutput, "%s", $$); } ID;
 %type <ast> program VarDeclList StmntList VarDecl Stmnt Expr
 %%
@@ -90,6 +89,7 @@ VarDecl:
              new_symbol->type = malloc(strlen($1) + 1); 
              strcpy(new_symbol->type, $1);
              new_symbol->value = 0;
+             
              insert(symbol_table, $2, new_symbol);
 
              $$ = malloc(sizeof(ASTNode));
@@ -133,6 +133,7 @@ StmntList:{/* emoty/do nothing*/}
 Stmnt:
     ID ASSIGNMENT_OPERATOR Expr SEMICOLON
     {
+        printf("PARSERAOKFNOEIFWEOFINEWO: %s\n", $2);
         $$ = malloc(sizeof(ASTNode));
 		$$->type = NodeType_Stmnt;
 		$$->Stmnt.id = strdup($1);
@@ -142,20 +143,17 @@ Stmnt:
         
     }
     |
-    WRITE ID SEMICOLON
-    {
-        printf("PARSER: Recognized Write Statement: %s\n", $2);
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_WriteStmnt;
-        $$->WriteStmnt.id = strdup($2);
-
-    }
-    |
     ID ASSIGNMENT_OPERATOR Expr
     {
-        fprintf(stderr, "PARSER_ERROR: Missing Semicolon at line %d\n", lines);
+        fprintf(stderr, "PARSER_ERROR: Missing Semicolon at line %d\n", lines)
     }
-
+    |
+    WRITE ID SEMICOLON {
+        
+        printf("PARSER Recognized Write Statement\n");
+        
+    }
+;
 Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
                         
 						$$ = malloc(sizeof(ASTNode));
@@ -225,6 +223,7 @@ int main() {
     }
     printf("---Semantic Analysis---\n");
     semanticAnalysis(root,symbol_table);
+    print_table(symbol_table);
     printf("Writing TAC into TAC.ir\n");
     printTACToFile("TAC.ir", tacHead);
     if (tacHead == NULL) {

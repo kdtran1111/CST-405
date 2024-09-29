@@ -14,6 +14,12 @@ typedef struct TAC {
     struct TAC* next; // Next instruction
 } TAC;
 
+typedef struct TempVarMap {
+    char* key;   // Variable or expression
+    char* tempVar; // Corresponding temp variable (e.g., t0, t1)
+    struct TempVarMap* next;
+} TempVarMap;
+
 int tempVars[20];
 extern TAC* tacHead; // Global head of the TAC instructions list
 
@@ -31,4 +37,8 @@ void appendTAC(TAC** head, TAC* newInstruction);
 void printTACToFile(const char* filename, TAC* tac);
 // You can add more function declarations related to semantic analysis here
 TAC* generateTACForSimpleExpr(ASTNode* expr, SymbolTable* symbol_table);
+
+//Trying TempVar Map
+void addTempVarMapping(char* key, char* tempVar);
+char* findTempVar(char* key);
 #endif // SEMANTIC_H

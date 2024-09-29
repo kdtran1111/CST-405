@@ -127,7 +127,17 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
         case NodeType_Expr:
             // Recursively analyze left and right expressions
             //Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);
+            /*
+            if (node->Expr.check == NULL){
+            node->Expr.check=3;
+            } else if (node->Expr.check == 0 ){
+                node->Expr.check = 1;
+            }
+            */
+            printf(" check = %d\n", node->Expr.check);
+            printf("----------------left-------------\n");
             semanticAnalysis(node->Expr.left, symbol_table);
+            printf("----------------right-------------\n");
             semanticAnalysis(node->Expr.right, symbol_table);
             break;
 
@@ -179,23 +189,48 @@ TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table) {
         printf("Error: Expression is NULL.\n");
         return NULL;
     }
-
+    char* tempResult;
     TAC* newTac = (TAC*)malloc(sizeof(TAC));
     if (!newTac) return NULL;
-
+    
     switch (expr->type) {
         case NodeType_Expr: {
             printf("Generating TAC for expression\n");
             newTac->op = strdup(expr->Expr.op);  // e.g., "+", "-", "*", etc.
-
+            newTac->result = createTempVar();
+            
+            
+            
             // Reuse temp vars for operands (x and y)
             newTac->arg1 = createOperand(expr->Expr.left, symbol_table);  // Left operand (e.g., t0 for x)
+           
+            printf( "TempResult is: %s\n", tempResult);// DEbug
+            if (tempResult){
+            //if(strcmp(newTac->result, tempResult) == 0){
             newTac->arg2 = createOperand(expr->Expr.right, symbol_table); // Right operand (e.g., t1 for y)
+            } else if (strcmp(newTac->result, tempResult) >0){
+            newTac->arg2=tempResult;
+            printf("tempResult is larger than result\n");
+            }
 
+            if( newTac->arg2 ==NULL){
+                printf("!!!!!!!!  arg2 is null  !!!!!!!\n");
+            }
+            /*
+            printf("Temp Result is NULL \n");
+            } else if (tempResult != NULL) {
+
+            printf(" check = %d\n", expr->Expr.check);
+            newTac->arg2 = (char*)tempResult;
+            }
+            */
             // Create a new temp var for the result of the expression
-            newTac->result = createTempVar();  
+            
+            tempResult = (char*)newTac->result;  
+            printf( "TempResult: %s\n", tempResult); //Debug
             printf("GEnerated in generateTAC\n");
             newTac->next = NULL;
+            //expr->Expr.check=1;
 
             printf("Generated TAC: %s = %s %s %s\n", newTac->result, newTac->arg1, newTac->op, newTac->arg2);
             break;
@@ -214,46 +249,36 @@ TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table) {
     return newTac;
 }
 
-
-
 char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
     char* operand = (char*)malloc(32 * sizeof(char));
 
     switch (node->type) {
         case NodeType_SimpleID: {
-            // Fetch the symbol and check if it has an associated temporary variable
-            
             Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id);
-
-            printf("TempVar: %s", symbol->tempVar);
-            if (symbol != NULL) {
-               
-               
-                if (symbol->tempVar == NULL) {
-                    // Create tempVar for this symbol only if it doesn't exist
-                    symbol->tempVar = createTempVar();
-                    printf("Generated in createOperand\n");
-                }
-                
-                
-                strcpy(operand, symbol->tempVar);  // Use the temporary variable associated with this symbol
-                        
+            if (symbol != NULL && symbol->tempVar != NULL) {
+                strcpy(operand, symbol->tempVar);
             } else {
-                strcpy(operand, "");  // Error handling (should not reach here if symbol table is correct)
+                snprintf(operand, 32, "");  // Debug empty case
+            //debug
+                if(symbol==NULL){
+                    printf("symbolNULL\n");
+                } else if (symbol->tempVar==NULL){
+                    printf("tempVarNULL\n");
+                }
+                printf("Warning: TempVar not found for SimpleID '%s'\n", node->SimpleID.id);
             }
             break;
         }
         case NodeType_SimpleExpr:
-            snprintf(operand, 32, "%d", node->SimpleExpr.value);  // Literal value for simple expressions
+            snprintf(operand, 32, "%d", node->SimpleExpr.value);
             break;
         default:
-            strcpy(operand, "");  // Unknown operand
+            strcpy(operand, "");
             break;
     }
 
     return operand;
 }
-
 
 
 // Print the TAC (three address code) instructions
@@ -338,4 +363,3 @@ char* createTempVar() {
     return tempVar;
 }
 //char* tempVarForSimpExpr(SymbolTable symbol_table, ){
-

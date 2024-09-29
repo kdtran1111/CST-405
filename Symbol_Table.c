@@ -38,6 +38,7 @@ void insert (SymbolTable* table, const char* key, Symbol* value) {
         strcpy(new_node->key, key);
 
         new_node->var = value;
+        
         //new_node->var->tempVar=createTempVar();
         new_node->next = NULL;
         table->table[index] = new_node; 
@@ -151,7 +152,7 @@ void updateValue(SymbolTable* table, const char* key, int new_value) {
         // If this is the first time assigning a value, create a temp variable
         if (symbol->tempVar == NULL) {
             symbol->tempVar = createTempVar();
-            printf("new temp var created in updateaValue()\n");
+            printf("new temp var created in updateaValue():   %s\n", symbol->tempVar);
         }
         
         printf("Updated value of %s to %d with tempVar %s\n", key, new_value, symbol->tempVar);
@@ -159,7 +160,11 @@ void updateValue(SymbolTable* table, const char* key, int new_value) {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }
 }
-
+/*
+void updateTempVar(SymbolTable* table, const char* key, char* tempVar){
+    Symbol
+}
+*/
 /* Working updateValue
 void updateValue(SymbolTable* table, const char* key, int new_value) {
     
