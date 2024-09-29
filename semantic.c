@@ -3,6 +3,7 @@
 #include <string.h>
 #include "semantic.h"
 
+int tempVars[20];
 TAC* tacHead = NULL;  // Global head of the TAC instructions list
 extern int declaredSymbol;
 extern int lines;
@@ -196,10 +197,10 @@ TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table) {
     switch (expr->type) {
         case NodeType_Expr: {
             printf("Generating TAC for expression\n");
-            newTac->op = strdup(expr->Expr.op);  // e.g., "+", "-", "*", etc.
-            newTac->result = createTempVar();
-            
-            
+            newTac->op = strdup(expr->Expr.op); // e.g., "+", "-", "*", etc.
+            tempResult = createTempVar();
+
+            newTac->result = strdup(tempResult);
             
             // Reuse temp vars for operands (x and y)
             newTac->arg1 = createOperand(expr->Expr.left, symbol_table);  // Left operand (e.g., t0 for x)
@@ -254,7 +255,8 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
 
     switch (node->type) {
         case NodeType_SimpleID: {
-            Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id);
+            printf("here");
+            Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id); //------
             if (symbol != NULL && symbol->tempVar != NULL) {
                 strcpy(operand, symbol->tempVar);
             } else {
@@ -359,7 +361,7 @@ char* createTempVar() {
     static int tempCounter = 0;
     char* tempVar = (char*)malloc(10 * sizeof(char));
     snprintf(tempVar, 10, "t%d", tempCounter++);
-     printf("Temp var created: %s\n", tempVar);
+    printf("Temp var created: %s\n", tempVar);
     return tempVar;
 }
 //char* tempVarForSimpExpr(SymbolTable symbol_table, ){
