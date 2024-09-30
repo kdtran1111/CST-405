@@ -151,7 +151,9 @@ Stmnt:
     WRITE ID SEMICOLON {
         
         printf("PARSER Recognized Write Statement\n");
-        
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_WriteStmnt;
+        $$->WriteStmnt.id = strdup($2);
     }
 ;
 Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
