@@ -11,6 +11,7 @@ typedef struct TAC {
     char* arg1; // Argument 1
     char* arg2; // Argument 2
     char* result; // Result
+    char* keyword; //such as write
     struct TAC* next; // Next instruction
 } TAC;
 

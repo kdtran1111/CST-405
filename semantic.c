@@ -5,6 +5,7 @@
 
 int tempVars[20];
 char* currentID;
+char* writeID;
 TAC* tacHead = NULL;  // Global head of the TAC instructions list
 extern int declaredSymbol;
 extern int lines;
@@ -86,6 +87,7 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
         case NodeType_Stmnt:
             currentID  = node->Stmnt.id;
             printf("Semantic analysis for statement, curr ID is %s\n", node->Stmnt.id);
+            Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);
             check_variable_declared(symbol_table, node->Stmnt.id, lines);  // Check if variable is declared
             semanticAnalysis(node->Stmnt.Expr, symbol_table);        // Analyze the expression on the right-hand side
 
@@ -93,15 +95,17 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
             check_type_consistency(symbol_table, node->Stmnt.id, node->Stmnt.Expr, lines);
             
             // Fetch the variable symbol to update
-            Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);
+            
             int temp = lookup(symbol_table, node->Stmnt.id);
             printf("Temp: %d\n",temp);
+             
             if (symbol != NULL && node->Stmnt.Expr->type == NodeType_SimpleExpr) {
+                TAC* newTac = (TAC*)malloc(sizeof(TAC));
             // Assuming the expression has an integer literal, update the variable's value
 
             updateValue(symbol_table, node->Stmnt.id, node->Stmnt.Expr->SimpleExpr.value);
             printf("updateValue has no problem\n");
-            TAC* newTac = (TAC*)malloc(sizeof(TAC));
+           
             printf("Generating TAC for simple expression\n");
             char buffer[20];
             //char* tempVar= getTempVar(symbol_table,expr->Stmnt.id);
@@ -151,12 +155,72 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
             break;
 
         case NodeType_SimpleExpr:
-            
-
         //default:
            break;
-    
 
+
+        case NodeType_WriteStmnt: {
+            // The id of the variable in the write statement is stored in WriteStmnt.id
+            currentID = node->WriteStmnt.id;  // Set currentID to the variable being written
+            printf("WriteStmnt: CurrentID is %s\n", currentID);  // Debugging print
+
+            // Fetch the symbol for currentID from the symbol table
+            Symbol* symbol = getSymbol(symbol_table, currentID);
+            if (symbol != NULL) {
+                // Generate TAC for the write statement
+                TAC* newTac = (TAC*)malloc(sizeof(TAC));
+                newTac->keyword = strdup("write");
+
+                // Use the tempVar for the write argument
+                if (symbol->tempVar != NULL) {
+                    newTac->arg1 = strdup(symbol->tempVar);
+                } else {
+                    semantic_error("Variable used in write statement has no tempVar", lines);
+                }
+
+                // Append the TAC for the write statement
+                appendTAC(&tacHead, newTac);
+            } else {
+                semantic_error("Undeclared variable in write statement", lines);
+            }
+
+            break;
+        }
+
+        /*
+        case NodeType_WriteStmnt: {
+            
+            semanticAnalysis(node->StmntList.Stmnt,symbol_table);
+            if (node->StmntList.Stmnt->type == NodeType_SimpleID) {
+            currentID = node->StmntList.Stmnt->SimpleID.id;  // Update currentID to 'x'
+            } else {
+        // Handle other cases, such as expressions
+            semantic_error("Invalid statement in write", lines);
+            }
+
+            printf("WriteStmnt: CurrentID is %s\n", currentID);  // Debugging print
+            TAC* newTac = (TAC*)malloc(sizeof(TAC));
+            
+            newTac->keyword =(char*)"write";
+            char* write = strdup(newTac->keyword);
+            printf("Write: %s\n",write);
+            printf("WriteStmID: %s\n",currentID);
+            newTac->arg1 = symbol->tempVar;
+            //char* WriteTempVar = strdup(newTac->arg1);   //this is where segmentation fault happen
+            printf("WriteTempVar: %s\n",symbol->tempVar);
+            //char* write = strdup(newTac->keyword);  
+            //printf("Write: %s\n",write);
+            appendTAC(&tacHead,newTac);
+           /*
+            //Symbol* symbol = getSymbol(symbol_table, currentID);
+            newTac->arg1 = symbol->tempVar;
+            printf("Symbol: %s\n", symbol->tempVar);
+            printf("WriteTempVar: %s\n", symbol);
+            appendTAC(&tacHead,newTac);
+            
+            break;
+        }
+        */
     // Traverse the AST recursively
    // switch (node->type) {
         case NodeType_program:
@@ -360,10 +424,13 @@ void printTACToFile(const char* filename, TAC* tac) {
             printf("%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
         }
         //avoid printing NULL into the TAC when it's simpleExpr 
-        else {
-
+        else if ( current->result!=NULL) {
+        
         fprintf(file, "%s = %s\n", current->result, current->arg1);
         printf("%s = %s\n", current->result, current->arg1);
+        } else{
+        fprintf(file, "%s %s\n", current->keyword, current->arg1);
+        printf("%s %s\n", current->keyword, current->arg1);
         }
 
         if (cntr == 1)
