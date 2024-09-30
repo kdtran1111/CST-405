@@ -58,6 +58,7 @@ typedef struct ASTNode
         struct
         {
             char* op;
+            int check;
             struct ASTNode* left;
             struct ASTNode* right;
             struct ASTNode* SimpleExpr;
