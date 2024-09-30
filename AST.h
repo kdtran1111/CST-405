@@ -15,7 +15,8 @@ typedef enum
     NodeType_Expr,
     NodeType_SimpleID,
     NodeType_SimpleExpr,
-    NodeType_Operand
+    NodeType_Operand,
+    NodeType_WriteStmnt
 }NodeType;
 
 // structs for each node type
@@ -78,6 +79,10 @@ typedef struct ASTNode
         {
             int value;
         }Operand;
+        struct
+        {   
+            char* id;
+        }WriteStmnt;
     };
     
 }ASTNode;
