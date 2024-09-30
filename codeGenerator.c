@@ -6,7 +6,8 @@
 #define MAX_LINE_LENGTH 100
 
 static FILE* outputFile;
-static Symbol* symbolTable = NULL;
+static ASMSymbol* symbolTable = NULL;
+static TAC* head = NULL;
 
 void initCodeGenerator(const char* outputFilename) {
     outputFile = fopen(outputFilename, "w");
@@ -23,15 +24,15 @@ void finalizeCodeGenerator() {
 }
 
 void addSymbol(const char* name, int value) {
-    Symbol* newSymbol = (Symbol*)malloc(sizeof(Symbol));
+    ASMSymbol* newSymbol = (ASMSymbol*)malloc(sizeof(ASMSymbol));
     newSymbol->name = strdup(name);
     newSymbol->value = value;
     newSymbol->next = symbolTable;
     symbolTable = newSymbol;
 }
 
-Symbol* findSymbol(const char* name) {
-    Symbol* current = symbolTable;
+ASMSymbol* findSymbol(const char* name) {
+    ASMSymbol* current = symbolTable;
     while (current) {
         if (strcmp(current->name, name) == 0) {
             return current;
@@ -123,9 +124,4 @@ void executeCodeGenerator(const char* tacFilename, const char* outputFilename) {
     TAC* tacInstructions = readTACFromFile(tacFilename);
     generateMIPS(tacInstructions);
     finalizeCodeGenerator();
-}
-
-int main() {
-    executeCodeGenerator("TAC.ir", "output.asm");
-    return 0;
 }

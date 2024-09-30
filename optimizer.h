@@ -11,7 +11,7 @@
 TAC* createTAC(char* result, char* arg1, char* op, char* arg2);
 
 // Helper function to append TAC node to the list
-void appendTAC(TAC** head, TAC* newTAC);
+void addTAC(TAC** head, TAC* newTAC);
 
 // Check if a string is an integer constant
 bool isConstant(const char* str);
@@ -43,6 +43,6 @@ void optimizeTAC(TAC** head);
 // Load TAC from file
 void loadTAC(const char* filename, TAC** head);
 
-void optimizer(TAC* tacHead);
+void optimizer(const char* filename);
 
 #endif // OPTIMIZER_H

@@ -30,7 +30,7 @@ TAC* createTAC(char* result, char* arg1, char* op, char* arg2)
 }
 
 // Helper function to append TAC node
-void appendTAC(TAC** head, TAC* newTAC) 
+void addTAC(TAC** head, TAC* newTAC) 
 {
     if (*head == NULL) {
         *head = newTAC;
@@ -322,11 +322,11 @@ void loadTAC(const char* filename, TAC** head)
         char result[32], arg1[32], op[4], arg2[32];
         int parsed = sscanf(line, "%s = %s %s %s", result, arg1, op, arg2);
         if (parsed == 2) {
-            appendTAC(head, createTAC(result, arg1, "=", NULL));
+            addTAC(head, createTAC(result, arg1, "=", NULL));
         } else if (parsed == 4) {
-            appendTAC(head, createTAC(result, arg1, op, arg2));
+            addTAC(head, createTAC(result, arg1, op, arg2));
         } else if (sscanf(line, "write %s", arg1) == 1) {
-            appendTAC(head, createTAC(NULL, arg1, "write", NULL)); // No result needed for write
+            addTAC(head, createTAC(NULL, arg1, "write", NULL)); // No result needed for write
         }
     }
 
@@ -334,12 +334,12 @@ void loadTAC(const char* filename, TAC** head)
 }
 
 // Main function
-int main() 
+void optimizer(const char* filename)
 {
     TAC* head = NULL;
 
     // Load TAC from file
-    loadTAC("TAC.ir", &head);
+    loadTAC(filename, &head);
     printf("Original TAC:\n");
     printOptimizedTAC("original_tac.txt", head);
 
@@ -351,6 +351,4 @@ int main()
 
     // Free the allocated TAC
     freeTAC(head);
-
-    return 0;
 }
