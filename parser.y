@@ -5,6 +5,8 @@
 #include "Symbol_Table.h"
 #include "AST.h"
 #include "semantic.h"
+#include "optimizer.h"
+#include "codeGenerator.h"
 extern int yylex();
 extern int yyparse();
 extern FILE* yyin;
@@ -234,6 +236,10 @@ int main() {
 
     printf("Writing TAC into TAC.ir successful\n");
     }
+
+    optimizer("TAC.ir");
+    executeCodeGenerator("TAC.ir", "output.asm");
+
     //Freeing the tree
     //freeAST(root);
     fclose(yyin);
