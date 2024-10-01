@@ -433,7 +433,7 @@ void printTACToFile(const char* filename, TAC* tac) {
         printf("%s %s\n", current->keyword, current->arg1);
         }
 
-        if (cntr == 1)
+        if (cntr >= 1)
         {
             previous = current;
             current = current->next;
