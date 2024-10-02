@@ -147,7 +147,7 @@ Stmnt:
     |
     ID ASSIGNMENT_OPERATOR Expr
     {
-        fprintf(stderr, "PARSER_ERROR: Missing Semicolon at line %d\n", lines)
+        fprintf(stderr, "PARSER_ERROR: Missing Semicolon at line %d\n", lines);
     }
     |
     WRITE ID SEMICOLON {
