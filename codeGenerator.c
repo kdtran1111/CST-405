@@ -92,14 +92,22 @@ TAC* readTACFromFile(const char* filename) {
         TAC* newTAC = (TAC*)malloc(sizeof(TAC));
         newTAC->next = NULL;
 
-        if (sscanf(line, "%ms = %ms %ms %ms", &newTAC->result, &newTAC->arg1, &newTAC->op, &newTAC->arg2) == 4) {
-            // Properly identified arithmetic operation
-        } else if (sscanf(line, "%ms = %ms", &newTAC->result, &newTAC->arg1) == 2) {
-            newTAC->op = "=";
+        char result[MAX_LINE_LENGTH], arg1[MAX_LINE_LENGTH], op[MAX_LINE_LENGTH], arg2[MAX_LINE_LENGTH];
+
+        if (sscanf(line, "%s = %s %s %s", result, arg1, op, arg2) == 4) {
+            newTAC->result = strdup(result);
+            newTAC->arg1 = strdup(arg1);
+            newTAC->op = strdup(op);
+            newTAC->arg2 = strdup(arg2);
+        } else if (sscanf(line, "%s = %s", result, arg1) == 2) {
+            newTAC->result = strdup(result);
+            newTAC->arg1 = strdup(arg1);
+            newTAC->op = strdup("=");
             newTAC->arg2 = NULL;
-        } else if (sscanf(line, "write %ms", &newTAC->arg1) == 1) {
-            newTAC->op = "write";
+        } else if (sscanf(line, "write %s", arg1) == 1) {
             newTAC->result = NULL;
+            newTAC->arg1 = strdup(arg1);
+            newTAC->op = strdup("write");
             newTAC->arg2 = NULL;
         } else {
             fprintf(stderr, "Invalid TAC instruction: %s", line);
@@ -118,7 +126,6 @@ TAC* readTACFromFile(const char* filename) {
     fclose(file);
     return head;
 }
-
 void executeCodeGenerator(const char* tacFilename, const char* outputFilename) {
     initCodeGenerator(outputFilename);
     TAC* tacInstructions = readTACFromFile(tacFilename);
