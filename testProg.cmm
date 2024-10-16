@@ -1,10 +1,21 @@
-int x;
-int a;
-int b;
-x=1;
-a=12;
+arr int test[5];
+string x;
+string y;
+func int testFunc()
+{
+    int x;
+    x = 12;
+    return x;
+}
 
-b= 23+10+12+12;
-x= b+ a+ a+ 1;
+func void voidFunc()
+{
+    int y;
+    y = 12;
+}
 
-write x;
+test[5] = 12;
+test[] = {1};
+test[5] = testFunc(12);
+
+x = (int) 12;

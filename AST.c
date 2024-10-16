@@ -16,6 +16,7 @@ void print_ast(ASTNode* node, int indent)
         case NodeType_program:
             printf("Program:\n");
             print_ast(node->program.VarDeclList, indent + 1);
+            print_ast(node->program.FuncDeclList, indent + 1);
             print_ast(node->program.StmntList, indent + 1);
             break;
 
@@ -38,6 +39,34 @@ void print_ast(ASTNode* node, int indent)
         case NodeType_Stmnt:
             printf("Assign Statement: ID = %s, Operator = %s\n", node->Stmnt.id, node->Stmnt.op);
             print_ast(node->Stmnt.Expr, indent + 1);
+            break;
+            
+        case NodeType_FuncDeclList:
+            printf("Func Decl List:\n");
+            print_ast(node->FuncDeclList.FuncDecl, indent + 1);
+            print_ast(node->FuncDeclList.FuncDeclList, indent + 1);
+            break;
+
+        case NodeType_FuncDecl:
+            printf("Func Decl: Type = %s, ID = %s\n", node->FuncDecl.type, node->FuncDecl.id);
+            print_ast(node->FuncDecl.VarDeclList, indent + 1);
+            print_ast(node->FuncDecl.StmntList, indent + 1);
+            print_ast(node->FuncDecl.ParamList, indent + 1);
+            print_ast(node->FuncDecl.ReturnStmnt, indent + 1);
+            break;
+
+        case NodeType_ParamList:
+            printf("Param List:\n");
+            print_ast(node->ParamList.Param, indent + 1);
+            print_ast(node->ParamList.ParamList, indent + 1);
+            break;
+
+        case NodeType_Param:
+            printf("Param: Type = %s, ID = %s\n", node->Param.type, node->Param.id);
+            break;
+
+        case NodeType_ReturnStmnt:
+            printf("Return Statement: ID = %s\n", node->ReturnStmnt.id);
             break;
 
         case NodeType_Expr:

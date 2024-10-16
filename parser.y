@@ -12,7 +12,9 @@ extern int yyparse();
 extern FILE* yyin;
 extern int lines;
 extern TAC* tacHead;  //Declared the head of the Linkedlist of TAC entries
-SymbolTable* symbol_table;
+OuterSymbolTable* symbol_table;
+char* current_scope = "global";
+SymbolTable* current_table;
 ASTNode* root;
 
 void yyerror(const char* s) {
@@ -32,6 +34,7 @@ void yyerror(const char* s) {
 /* Define token types */
 %token <string> KEYWORD
 %token <string> TYPE
+%token <string> ARR
 %token <intval> INT
 %token <int> FLOAT
 %token <string> STRING
@@ -42,20 +45,31 @@ void yyerror(const char* s) {
 %token <string> RELATIONAL_OPERATOR
 %token <char> SEMICOLON
 %token <char> SYMBOL
+%token <char> LBRACKET
+%token <char> LPAR
+%token <char> RPAR
+%token <string> RETURN
+%token <char> COMMA
+%token <char> RBRACKET
+%token <char> LCURL
+%token <char> RCURL
+%token <string> VOID
+%token <string> FUNC
 %token <string> ID
 %token <string> WRITE
 %printer { fprintf(yyoutput, "%s", $$); } ID;
-%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr
+%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty
 %%
 
 program:
-    VarDeclList StmntList
+    VarDeclList FuncDeclList StmntList
     {
         printf("The PARSER has started\n");
         root = malloc(sizeof(ASTNode));
 		root->type = NodeType_program;
 		root->program.VarDeclList = $1;
-		root->program.StmntList = $2;
+        root->program.FuncDeclList = $2;
+		root->program.StmntList = $3;
     }
      |
     StmntList
@@ -81,18 +95,60 @@ VarDeclList:{/* empty/do nothing */}
     ;
 
 VarDecl:
+    ARR TYPE ID LBRACKET INT RBRACKET SEMICOLON
+    {
+        printf("PARSER: Recognized %s array declaration: %s\n", $2, $3);
+
+        if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $2) == 0)
+        {
+            
+            if (strcmp($2, "int") == 0)
+            {
+                insert_int_arr_symbol(get_symbol_table(symbol_table, current_scope), $3, $5);
+            }
+
+            else if (strcmp($2, "float") == 0)
+            {
+                insert_int_arr_symbol(get_symbol_table(symbol_table, current_scope), $3, $5);
+            }
+            
+            else if (strcmp($2, "string") == 0)
+            {
+                insert_int_arr_symbol(get_symbol_table(symbol_table, current_scope), $3, $5);
+            }
+
+            
+        }
+        else
+        {
+            printf("ERROR ON LINE %d: ID %s has already been defined\n", lines, $2);
+
+            exit(0);
+        }
+
+    }
+    |
     TYPE ID SEMICOLON
     {
-        printf("PARSER: Recognized variable declaration: %s\n", $2);
-        
-        if (lookup(symbol_table, $2) == 0)
+        printf("PARSER: Recognized variable declaration: %s\n", $1);
+
+        if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $2) == 0)
         {
-             Symbol* new_symbol = malloc(sizeof(Symbol));
-             new_symbol->type = malloc(strlen($1) + 1); 
-             strcpy(new_symbol->type, $1);
-             new_symbol->value = 0;
-             
-             insert(symbol_table, $2, new_symbol);
+            
+            if (strcmp($1, "int") == 0)
+            {
+                insert_int_symbol(get_symbol_table(symbol_table, current_scope), $2, 0);
+            }
+
+            else if (strcmp($1, "float") == 0)
+            {
+                insert_float_symbol(get_symbol_table(symbol_table, current_scope), $2, 0.0);
+            }
+            
+            else if (strcmp($1, "string") == 0)
+            {
+                insert_string_symbol(get_symbol_table(symbol_table, current_scope), $2, "NULL");
+            }
 
              $$ = malloc(sizeof(ASTNode));
 			 $$->type = NodeType_VarDecl;
@@ -120,6 +176,167 @@ VarDecl:
     {
         fprintf(stderr, "PARSER_ERROR: Invalid Identifier Name %d\n", lines);
     }
+
+FuncDeclList: {/* empty/do noting*/}
+    |
+    FuncDecl FuncDeclList
+    {
+        $$ = malloc(sizeof(ASTNode));
+		$$->type = NodeType_FuncDeclList;
+		$$->FuncDeclList.FuncDecl = $1;
+		$$->FuncDeclList.FuncDeclList = $2;
+    }
+
+FuncDecl:
+    FUNC TYPE ID {insert_scope(symbol_table, $3, 10, $2); current_scope = $3;} LPAR ParamList RPAR LCURL VarDeclList StmntList ReturnStmnt RCURL
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_FuncDecl;
+        $$->FuncDecl.id = $3;
+        $$->FuncDecl.type = $2;
+        $$->FuncDecl.ParamList = $6;
+        $$->FuncDecl.VarDeclList = $9;
+        $$->FuncDecl.StmntList = $10;
+        $$->FuncDecl.ReturnStmnt = $11;
+
+        current_scope = "global" ; 
+        printf("PARSER: recognized function declaration");
+    }  
+    |
+    FUNC VOID ID {insert_scope(symbol_table, $3, 10, "void"); current_scope = $3;} LPAR ParamList RPAR LCURL VarDeclList StmntList ReturnStmnt RCURL
+    {   
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_FuncDecl;
+        $$->FuncDecl.id = $3;
+        $$->FuncDecl.type = strdup("void");
+        $$->FuncDecl.ParamList = $6;
+        $$->FuncDecl.VarDeclList = $9;
+        $$->FuncDecl.StmntList = $10;
+        $$->FuncDecl.ReturnStmnt = $11;
+       
+        current_scope = "global" ; 
+        printf("PARSER: recognized function declaration");
+    }
+
+ReturnStmnt:
+    {
+        if (strcmp(get_scope_type(symbol_table, current_scope), "void") != 0)
+        {
+
+            printf("ERROR: function with return type has no return statement at line %d\n", lines); 
+            exit(1);
+        }
+
+    }
+    |
+    RETURN ID SEMICOLON
+    {  
+        if (strcmp(get_scope_type(symbol_table, current_scope), "void") == 0)
+        {
+            printf("ERROR: Function of Type VOID not expecting return at line %d\n", lines);
+            exit(1);
+        } 
+
+        else
+        {
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_ReturnStmnt;
+            $$->ReturnStmnt.id = strdup($2);
+            printf("PARSER: Recognized return statement\n");
+        }
+
+    }
+    |
+    RETURN ID
+    {
+        printf("ERROR: Missing Semicolon at Line %d\n", lines);
+        exit(1);
+    }
+
+ParamList:
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$-> type = NodeType_ParamList;
+        $$-> ParamList.Param = NULL;
+        $$-> ParamList.ParamList = NULL; 
+    }
+    |
+    Param
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ParamList;
+		$$->ParamList.Param = $1;
+		$$->ParamList.ParamList = NULL;
+
+    }
+    |
+    Param COMMA ParamListNonEmpty
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ParamList;
+        $$->ParamList.Param = $1;
+        $$->ParamList.ParamList = $3;
+    }
+
+ParamListNonEmpty:
+    Param
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ParamList;
+		$$->ParamList.Param = $1;
+		$$->ParamList.ParamList = NULL;
+    }
+    |
+    Param COMMA ParamListNonEmpty
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ParamList;
+        $$->ParamList.Param = $1;
+        $$->ParamList.ParamList = $3;
+    }
+
+Param:
+
+    TYPE ID
+    {
+        printf("PARSER: Recognized variable declaration: %s\n", $1);
+
+        if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $2) == 0)
+        {
+            
+            if (strcmp($1, "int") == 0)
+            {
+                insert_int_symbol(get_symbol_table(symbol_table, current_scope), $2, 0);
+            }
+
+            else if (strcmp($1, "float") == 0)
+            {
+                insert_float_symbol(get_symbol_table(symbol_table, current_scope), $2, 0.0);
+            }
+            
+            else if (strcmp($1, "string") == 0)
+            {
+                insert_string_symbol(get_symbol_table(symbol_table, current_scope), $2, "NULL");
+            }
+
+
+             print_table(symbol_table);
+            
+        }
+        else
+        {
+            printf("ERROR ON LINE %d: ID %s has already been defined\n", lines, $2);
+
+            exit(0);
+        }
+
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_Param;
+        $$->Param.type = $1;
+        $$->Param.id = $2;
+        
+    }
+
 
 StmntList:{/* emoty/do nothing*/}
     |
@@ -157,7 +374,114 @@ Stmnt:
         $$->type = NodeType_WriteStmnt;
         $$->WriteStmnt.id = strdup($2);
     }
-;
+    |
+    ID LBRACKET INT RBRACKET ASSIGNMENT_OPERATOR Expr SEMICOLON
+    {
+        if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $1) == 1)
+        {
+            printf("PARSER: Recognized array index assignment\n");
+        }
+
+        else
+        {
+            printf("ERROR: Used undeclared variable at line %d\n", lines);
+            exit(1);
+        }
+    }
+    |
+    ID LBRACKET RBRACKET ASSIGNMENT_OPERATOR LCURL ValueList RCURL SEMICOLON
+    {
+
+        if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $1) == 1)
+        {
+            printf("PARSER: Recognized array assignment\n");
+        }
+
+        else
+        {
+            printf("ERROR: Used undeclared variable at line %d\n", lines);
+            exit(1);
+        }
+    }
+    |
+    ID LPAR ValueList RPAR SEMICOLON
+    {
+        if (lookup_scope(symbol_table, $1) == 1)
+        {
+            printf("PARSER: Recognized function call\n");
+        }
+
+        else
+        {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
+    }
+    |
+    ID ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
+    {
+        if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $1) == 0)
+        {
+            printf("ERROR: Used undeclared variable at line %d\n", lines);
+            exit(1);
+        }
+
+        else if (lookup_scope(symbol_table, $3) == 0)
+        {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
+
+        else
+        {
+            printf("PARSER: Recognized variable assignment to function call\n");
+        }
+    }
+    |
+    ID LBRACKET INT RBRACKET ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
+    {
+        if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $1) == 0)
+        {
+            printf("ERROR: Used undeclared variable at line %d\n", lines);
+            exit(1);
+        }
+
+        else if (lookup_scope(symbol_table, $6) == 0)
+        {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
+
+        else
+        {
+            printf("PARSER: Recognized array index assignment to function call");
+        }
+
+    }
+    |
+    ID ASSIGNMENT_OPERATOR LPAR TYPE RPAR Val SEMICOLON
+    {
+        printf("PARSER: Recognized type cast to %s\n", $4);
+    }
+
+
+ValueList:
+    |
+    Val
+    |
+    Val COMMA ValueListNonEmpty
+
+ValueListNonEmpty:
+    Val
+    |
+    Val COMMA ValueListNonEmpty
+
+Val:
+    ID
+    |
+    INT
+
+
 Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
                         
 						$$ = malloc(sizeof(ASTNode));
@@ -204,10 +528,13 @@ Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
 %%
 
 int main() {
+    symbol_table = create_outer_table(10);
+    insert_scope(symbol_table, current_scope, 10, "void");
+    current_table = malloc(sizeof(SymbolTable));
+    
     // Initialize file or input source
     yyin = fopen("testProg.cmm", "r");
-    
-    symbol_table = create_table(10);
+
     if (symbol_table == NULL) {
         perror("Failed to create symbol table");
         fclose(yyin);
@@ -220,30 +547,16 @@ int main() {
     // Start parsing
     if (yyparse() == 0) {
         // Successfully parsed
-		printf("Parsing successful!\n");
-        print_ast(root, 1);
+		printf("PARSING SUCCESFUL!\n");
     } else {
         fprintf(stderr, "Parsing failed\n");
     }
-    printf("---Semantic Analysis---\n");
-    semanticAnalysis(root,symbol_table);
-    print_table(symbol_table);
-    printf("Writing TAC into TAC.ir\n");
-    printTACToFile("TAC.ir", tacHead);
-    if (tacHead == NULL) {
-    printf("Error: TAC head is NULL. No instructions to write.\n");
-    }else {
 
-    printf("Writing TAC into TAC.ir successful\n");
-    }
-
-    optimizer("TAC.ir");
-    executeCodeGenerator("TAC.ir", "output.asm");
+    print_ast(root, 0);
 
     //Freeing the tree
-    //freeAST(root);
     fclose(yyin);
-    
+    print_table(symbol_table);
 
     
     return 0;

@@ -51,9 +51,11 @@ ArithmeticOperator    [-+*/]
 "break"     { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
 "continue"  { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
 "goto"      { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
-"return"    { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
+"return"    { words++; chars += strlen(yytext); printf("%s : RETURN\n", yytext); return RETURN; }
 "write"     { words++; chars += strlen(yytext); printf("%s : WRITE\n", yytext); return WRITE; }
-
+"arr"		{ words++; chars += strlen(yytext); printf("%s : ARR\n", yytext); return ARR; }
+"func"		{ words++; chars += strlen(yytext); printf("%s : FUNC\n", yytext); return FUNC; }
+"void"		{ words++; chars += strlen(yytext); printf("%s : VOID\n", yytext); return VOID; }
 
 int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 printf("%s : TYPE\n", yytext);
@@ -84,6 +86,7 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 printf("%s : CHAR\n", yytext);
 		 return CHAR;
 		 }
+		 
 
 {errorID}	{words++; chars += strlen(yytext);
 		 printf("%s : Error - Invalid Identifier at line %d char %d\n", yytext, lines+1, chars);
@@ -122,13 +125,13 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 
 ";"         { chars++; printf("%s : SEMICOLON \n", yytext); return SEMICOLON; }
 ":"         { chars++; printf("%s : SYMBOL\n", yytext); return SYMBOL; }
-","         { chars++; printf("%s : SYMBOL\n", yytext); return SYMBOL; }
-"("         { chars++; printf("%s : SYMBOL\n", yytext); return SYMBOL; }
-")"         { chars++; printf("%s : SYMBOL\n", yytext); return SYMBOL; }
-"["         { chars++; printf("%s : SYMBOL\n", yytext); return SYMBOL; }
-"]"         { chars++; printf("%s : SYMBOL\n", yytext); return SYMBOL; }
-"{"         { chars++; printf("%s : SYMBOL\n", yytext); return SYMBOL; }
-"}"         { chars++; printf("%s : SYMBOL\n", yytext); return SYMBOL; }
+","         { chars++; printf("%s : COMMA\n", yytext); return COMMA; }
+"("         { chars++; printf("%s : LPAR\n", yytext); return LPAR; }
+")"         { chars++; printf("%s : RPAR\n", yytext); return RPAR; }
+"["         { chars++; printf("%s : LBRACKET\n", yytext); return LBRACKET; }
+"]"         { chars++; printf("%s : RBRACKET\n", yytext); return RBRACKET; }
+"{"         { chars++; printf("%s : LECURL\n", yytext); return LCURL; }
+"}"         { chars++; printf("%s : RCURL\n", yytext); return RCURL; }
 
 
 [\r\n]+	{lines++; chars=0;}
