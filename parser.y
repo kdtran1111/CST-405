@@ -29,6 +29,7 @@ void yyerror(const char* s) {
     char* string;
     struct ASTNode* ast;
     int intval;
+    float floatval;
 }
 
 /* Define token types */
@@ -36,7 +37,7 @@ void yyerror(const char* s) {
 %token <string> TYPE
 %token <string> ARR
 %token <intval> INT
-%token <int> FLOAT
+%token <floatval> FLOAT
 %token <string> STRING
 %token <char> CHAR
 %token <string> ARITHMETIC_OPERATOR
@@ -58,7 +59,7 @@ void yyerror(const char* s) {
 %token <string> ID
 %token <string> WRITE
 %printer { fprintf(yyoutput, "%s", $$); } ID;
-%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty
+%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val ArrAssignemnt
 %%
 
 program:
@@ -101,20 +102,28 @@ VarDecl:
 
         if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $2) == 0)
         {
-            
+            $$ = malloc(sizeof(ASTNode));
+			$$->type = NodeType_VarDecl;
+			$$->VarDecl.id = strdup($2);
+            $$->VarDecl.size = $5;
+            print_table(symbol_table);
+
             if (strcmp($2, "int") == 0)
             {
                 insert_int_arr_symbol(get_symbol_table(symbol_table, current_scope), $3, $5);
+                $$->VarDecl.type = strdup("int_arr");
             }
 
             else if (strcmp($2, "float") == 0)
             {
                 insert_int_arr_symbol(get_symbol_table(symbol_table, current_scope), $3, $5);
+                $$->VarDecl.type = strdup("float_arr");
             }
             
             else if (strcmp($2, "string") == 0)
             {
                 insert_int_arr_symbol(get_symbol_table(symbol_table, current_scope), $3, $5);
+                $$->VarDecl.type = strdup("string_arr");
             }
 
             
@@ -125,7 +134,7 @@ VarDecl:
 
             exit(0);
         }
-
+        
     }
     |
     TYPE ID SEMICOLON
@@ -150,12 +159,12 @@ VarDecl:
                 insert_string_symbol(get_symbol_table(symbol_table, current_scope), $2, "NULL");
             }
 
-             $$ = malloc(sizeof(ASTNode));
-			 $$->type = NodeType_VarDecl;
-			 $$->VarDecl.type = strdup($1);
-			 $$->VarDecl.id = strdup($2);
-
-             print_table(symbol_table);
+            $$ = malloc(sizeof(ASTNode));
+			$$->type = NodeType_VarDecl;
+			$$->VarDecl.type = strdup($1);
+			$$->VarDecl.id = strdup($2);
+            $$->VarDecl.size = 0;
+            print_table(symbol_table);
             
         }
         else
@@ -380,6 +389,11 @@ Stmnt:
         if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $1) == 1)
         {
             printf("PARSER: Recognized array index assignment\n");
+            $$ = malloc (sizeof(ASTNode));
+            $$->type = NodeType_IndexAssignment;
+            $$->IndexAssignment.id = $1;
+            $$->IndexAssignment.index = $3;
+            $$->IndexAssignment.Expr = $6;
         }
 
         else
@@ -394,6 +408,11 @@ Stmnt:
 
         if (lookup_symbol(get_symbol_table(symbol_table, current_scope), $1) == 1)
         {
+            $$ = malloc (sizeof(ASTNode));
+            $$->type = NodeType_ArrAssignment;
+            $$->ArrAssignment.id = strdup($1);
+            $$->ArrAssignment.ValueList = $6;
+
             printf("PARSER: Recognized array assignment\n");
         }
 
@@ -466,20 +485,67 @@ Stmnt:
 
 
 ValueList:
-    |
     Val
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ValueList;
+        $$->ValueList.Val = $1;
+        $$->ValueList.ValueList = NULL;
+    }
     |
     Val COMMA ValueListNonEmpty
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ValueList;
+        $$->ValueList.Val = $1;
+        $$->ValueList.ValueList = $3;
+    }
 
 ValueListNonEmpty:
     Val
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ValueList;
+        $$->ValueList.Val = $1;
+        $$->ValueList.ValueList = NULL;
+    }
     |
     Val COMMA ValueListNonEmpty
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ValueList;
+        $$->ValueList.Val = $1;
+        $$->ValueList.ValueList = $3;
+    }
 
 Val:
     ID
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_SimpleID;
+        $$->SimpleID.id = strdup($1);
+    }
     |
     INT
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_SimpleExpr;
+        $$->SimpleExpr.value = $1;
+    }
+    |
+    FLOAT
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_SimpleFloat;
+        $$->SimpleFloat.value = $1;
+    }
+    |
+    STRING
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_SimpleString;
+        $$->SimpleString.value = strdup($1);
+    }
 
 
 Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
@@ -512,7 +578,6 @@ Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
     {
         printf("PARSER: Recognized integer expression: %d\n", $1);
         
-        print_table(symbol_table);
         $$ = malloc(sizeof(ASTNode));
         /*if ($$->Expr.op == NULL) {
         fprintf(stderr, "Memory allocation for variable initialization failed\n");
@@ -557,6 +622,7 @@ int main() {
     //Freeing the tree
     fclose(yyin);
     print_table(symbol_table);
+
 
     
     return 0;

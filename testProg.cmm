@@ -1,21 +1,19 @@
 arr int test[5];
 string x;
 string y;
-func int testFunc()
+func int testFunc(int j)
 {
     int x;
     x = 12;
     return x;
 }
 
-func void voidFunc()
+func void voidFunc(int i, float j)
 {
     int y;
     y = 12;
 }
 
-test[5] = 12;
-test[] = {1};
-test[5] = testFunc(12);
+test[5] = 12 + 12 + 12;
 
-x = (int) 12;
+test[] = {"float", "float", "float", "float", "float"};

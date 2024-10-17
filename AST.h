@@ -15,13 +15,18 @@ typedef enum
     NodeType_Expr,
     NodeType_SimpleID,
     NodeType_SimpleExpr,
+    NodeType_SimpleFloat,
+    NodeType_SimpleString,
     NodeType_Operand,
     NodeType_WriteStmnt,
     NodeType_FuncDeclList,
     NodeType_FuncDecl,
     NodeType_ParamList,
     NodeType_Param,
-    NodeType_ReturnStmnt
+    NodeType_ReturnStmnt,
+    NodeType_IndexAssignment,
+    NodeType_ValueList,
+    NodeType_ArrAssignment
 }NodeType;
 
 // structs for each node type
@@ -46,6 +51,7 @@ typedef struct ASTNode
         struct
         {
             char* type;
+            int size;
             char* id;
         }VarDecl;
 
@@ -79,6 +85,16 @@ typedef struct ASTNode
 
         struct
         {
+            float value;
+        }SimpleFloat;
+
+        struct
+        {
+            char* value;
+        }SimpleString;
+
+        struct
+        {
             char* id;
         }SimpleID;
 
@@ -86,6 +102,7 @@ typedef struct ASTNode
         {
             int value;
         }Operand;
+
         struct
         {   
             char* id;
@@ -123,6 +140,26 @@ typedef struct ASTNode
         {
             char* id;
         }ReturnStmnt;
+
+        struct
+        {
+            char* id;
+            int index;
+            struct ASTNode* Expr;
+        }IndexAssignment;
+
+        struct 
+        {
+            struct ASTNode* Val;
+            struct ASTNode* ValueList;
+        }ValueList;
+
+        struct
+        {
+            char* id;
+            struct ASTNode* ValueList;
+        }ArrAssignment;
+        
     };
     
 }ASTNode;

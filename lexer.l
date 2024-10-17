@@ -72,13 +72,21 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 
 {FLOAT}	{words++; chars += strlen(yytext);
 			  printf("%s : FLOAT\n",yytext);
+			  yylval.floatval = atof(yytext);
 			  return FLOAT;
 			}
 
-{STRING} {words++; 
-		 chars += strlen(yytext);
-		 printf("%s : STRING\n", yytext);
-		 return STRING;
+{STRING} {// Strip the surrounding quotes
+		int len = strlen(yytext);
+        char stripped[len - 1]; 
+        strncpy(stripped, yytext + 1, len - 2); 
+        stripped[len - 2] = '\0'; // Null-terminate the string
+
+        words++; 
+        chars += len - 2; // Update character count without the quotes
+        printf("%s : STRING\n", stripped); 
+		yylval.string = strdup(stripped);
+        return STRING;
 		 }
 
 {CHAR} {words++; 

@@ -27,7 +27,7 @@ void print_ast(ASTNode* node, int indent)
             break;
 
         case NodeType_VarDecl:
-            printf("Var Decl: Type = %s, ID = %s\n", node->VarDecl.type, node->VarDecl.id);
+            printf("Var Decl: Type = %s, ID = %s, size = %d\n", node->VarDecl.type, node->VarDecl.id, node->VarDecl.size);
             break;
 
         case NodeType_StmntList:
@@ -69,6 +69,22 @@ void print_ast(ASTNode* node, int indent)
             printf("Return Statement: ID = %s\n", node->ReturnStmnt.id);
             break;
 
+        case NodeType_IndexAssignment:
+            printf("Index Assignment: ID = %s, Index = %d\n", node->IndexAssignment.id, node->IndexAssignment.index);
+            print_ast(node->IndexAssignment.Expr, indent + 1);
+            break;
+
+        case NodeType_ArrAssignment:
+            printf("Array Assignment: ID = %s\n", node->ArrAssignment.id);
+            print_ast(node->ArrAssignment.ValueList, indent + 1);
+            break;
+        
+        case NodeType_ValueList:
+            printf("Value List:\n");
+            print_ast(node->ValueList.Val, indent +1);
+            print_ast(node->ValueList.ValueList, indent + 1);
+            break;
+
         case NodeType_Expr:
             printf("Expression: Operator = %s\n", node->Expr.op);
             print_ast(node->Expr.left, indent + 1);
@@ -81,6 +97,12 @@ void print_ast(ASTNode* node, int indent)
 
         case NodeType_SimpleID:
             printf("Simple ID: id = %s\n", node->SimpleID.id);
+            break;
+        case NodeType_SimpleFloat:
+            printf("Simple Float: value = %f\n", node->SimpleFloat.value);
+            break;
+        case NodeType_SimpleString:
+            printf("Simple String: value = %s\n", node->SimpleString.value);
             break;
         case NodeType_WriteStmnt:
             printf("Write Statement: id = %s\n", node->WriteStmnt.id);
