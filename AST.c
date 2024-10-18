@@ -28,6 +28,7 @@ void print_ast(ASTNode* node, int indent)
 
         case NodeType_VarDecl:
             printf("Var Decl: Type = %s, ID = %s, size = %d\n", node->VarDecl.type, node->VarDecl.id, node->VarDecl.size);
+            
             break;
 
         case NodeType_StmntList:
@@ -49,9 +50,9 @@ void print_ast(ASTNode* node, int indent)
 
         case NodeType_FuncDecl:
             printf("Func Decl: Type = %s, ID = %s\n", node->FuncDecl.type, node->FuncDecl.id);
+            print_ast(node->FuncDecl.ParamList, indent + 1);
             print_ast(node->FuncDecl.VarDeclList, indent + 1);
             print_ast(node->FuncDecl.StmntList, indent + 1);
-            print_ast(node->FuncDecl.ParamList, indent + 1);
             print_ast(node->FuncDecl.ReturnStmnt, indent + 1);
             break;
 
@@ -104,11 +105,15 @@ void print_ast(ASTNode* node, int indent)
         case NodeType_SimpleString:
             printf("Simple String: value = %s\n", node->SimpleString.value);
             break;
+        case NodeType_SimpleArrIndex:
+            printf("Simple Array Index: id = %s, index = %d\n", node->SimpleArrIndex.id, node->SimpleArrIndex.index);
+            break;
+
         case NodeType_WriteStmnt:
             printf("Write Statement: id = %s\n", node->WriteStmnt.id);
             break;
+        
         default:
-            printf("Unknown node type!\n");
             break;
     }   
 }

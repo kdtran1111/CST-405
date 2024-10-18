@@ -106,12 +106,6 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 return ID;
 		}
 
-{ArithmeticOperator} 	{ chars ++;
-		 	printf("%s : ARITHMETICOPERATOR\n", yytext);
-			yylval.string = strdup(yytext);
-			return ARITHMETIC_OPERATOR;
-			}
-
 "&&"		{chars += strlen(yytext);printf("%s : LOGICOPERATOR\n", yytext); return LOGIC_OPERATOR;}
 "||"		{chars += strlen(yytext); printf("%s : LOGICOPERATOR\n", yytext); return LOGIC_OPERATOR;}
 "!"		{chars += strlen(yytext); printf("%s : LOGICOPERATOR\n", yytext); return LOGIC_OPERATOR;}
@@ -121,6 +115,12 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 "-="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
 "*="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
 "/="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
+
+"+"         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return PLUS; }
+"-"         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return MINUS; }
+"*"         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return MULTIPLICATION;}
+"/"         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return DIVISION; }
+
 
 
 "<="        { chars += strlen(yytext); printf("%s : RELATIONAL_OPERATOR\n", yytext); return RELATIONAL_OPERATOR; }

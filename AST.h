@@ -17,6 +17,7 @@ typedef enum
     NodeType_SimpleExpr,
     NodeType_SimpleFloat,
     NodeType_SimpleString,
+    NodeType_SimpleArrIndex,
     NodeType_Operand,
     NodeType_WriteStmnt,
     NodeType_FuncDeclList,
@@ -97,6 +98,12 @@ typedef struct ASTNode
         {
             char* id;
         }SimpleID;
+
+        struct
+        {
+            int index;
+            char* id;
+        }SimpleArrIndex;
 
         struct
         {
