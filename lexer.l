@@ -56,6 +56,7 @@ ArithmeticOperator    [-+*/]
 "arr"		{ words++; chars += strlen(yytext); printf("%s : ARR\n", yytext); return ARR; }
 "func"		{ words++; chars += strlen(yytext); printf("%s : FUNC\n", yytext); return FUNC; }
 "void"		{ words++; chars += strlen(yytext); printf("%s : VOID\n", yytext); return VOID; }
+"struct"	{ words++; chars += strlen(yytext); printf("%s : STRUCT\n", yytext); return STRUCT; }
 
 int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 printf("%s : TYPE\n", yytext);
@@ -140,6 +141,7 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 "]"         { chars++; printf("%s : RBRACKET\n", yytext); return RBRACKET; }
 "{"         { chars++; printf("%s : LECURL\n", yytext); return LCURL; }
 "}"         { chars++; printf("%s : RCURL\n", yytext); return RCURL; }
+"_"			{ chars++; printf("%s : UNDERSCORE\n", yytext); return UNDERSCORE; }
 
 
 [\r\n]+	{lines++; chars=0;}

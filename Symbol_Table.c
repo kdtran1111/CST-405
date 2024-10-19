@@ -62,6 +62,104 @@ void insert_scope(OuterSymbolTable* outerTable, char* scopeName, int innerTableS
     outerTable->table[scopeIndex] = newScopeNode;
 }
 
+void insert_struct(OuterSymbolTable* outer_table, char* scope_name, int inner_table_size) {
+    int scope_index = hash(scope_name, outer_table->size) % outer_table->size;
+    ScopeNode* new_scope_node = malloc(sizeof(ScopeNode));
+    new_scope_node->key = strdup(scope_name);
+    new_scope_node->return_type = strdup("STRUCT");
+
+    // Create symbol table for scope
+    new_scope_node->scopeTable = create_symbol_table(inner_table_size);
+    new_scope_node->next = outer_table->table[scope_index];
+    outer_table->table[scope_index] = new_scope_node;
+}
+
+// Function to deep copy a symbol table (struct definition)
+SymbolTable* deep_copy_symbol_table(SymbolTable* original) {
+    SymbolTable* new_table = malloc(sizeof(SymbolTable));
+    new_table->size = original->size;
+    new_table->table = malloc(new_table->size * sizeof(SymbolNode*));
+
+    // Initialize all slots in the table to NULL
+    for (int i = 0; i < new_table->size; i++) {
+        new_table->table[i] = NULL;
+    }
+
+    // Traverse the original symbol table and copy each entry
+    for (int i = 0; i < original->size; i++) {
+        SymbolNode* current_node = original->table[i];
+
+        while (current_node != NULL) {
+            // Copy the symbol node
+            SymbolNode* new_node = malloc(sizeof(SymbolNode));
+            new_node->key = strdup(current_node->key);
+
+            // Copy the symbol
+            Symbol* new_symbol = malloc(sizeof(Symbol));
+            new_symbol->type_str = strdup(current_node->var->type_str);
+
+            // If the symbol has fields (struct fields), just copy the basic values
+            new_symbol->size = current_node->var->size;
+
+            // Copy the value (assuming primitive types for now)
+            // For more complex data types, you may need further deep copying
+            if (strcmp(current_node->var->type_str, "INT") == 0) 
+            {
+                new_symbol->value.intValue = current_node->var->value.intValue;
+            } 
+
+            else if (strcmp(current_node->var->type_str, "INT") == 0) 
+            {
+                new_symbol->value.floatValue = current_node->var->value.floatValue;
+            }
+
+            else if (strcmp(current_node->var->type_str, "STRING") == 0) 
+            {
+                new_symbol->value.stringValue = strdup(current_node->var->value.stringValue);
+            }
+
+            // You would handle other types similarly
+
+            new_node->var = new_symbol;
+
+            // Insert the new node into the new table
+            new_node->next = new_table->table[i];
+            new_table->table[i] = new_node;
+
+            current_node = current_node->next;
+        }
+    }
+
+    return new_table;
+}
+
+
+// Function to create and insert a new symbol of type struct into the symbol table
+void insert_struct_symbol(SymbolTable* table, char* var_name, SymbolTable* struct_table, char* struct_name)
+{
+    int index = hash(var_name, table->size) % table->size;
+
+    // Check for duplicate symbols in the same scope
+    if (lookup_symbol(table, var_name) == 1) {
+        printf("Error: Symbol %s already exists in this scope.\n", var_name);
+        return;
+    }
+
+    SymbolNode* new_node = malloc(sizeof(SymbolNode));
+    new_node->key = strdup(var_name);
+
+    // Create a new symbol with original struct variables
+    Symbol* symbol = malloc(sizeof(Symbol));
+    symbol->type_str = strdup(struct_name);
+    symbol->value.structValue = deep_copy_symbol_table(struct_table);
+
+    // Add the new symbol node to the front of the linked list at this index
+    new_node->var = symbol;
+    new_node->next = table->table[index];
+    table->table[index] = new_node;
+    symbol->size = 0;
+}
+
 
 // Function to create and insert a new Symbol of type int into the symbol table
 void insert_int_symbol(SymbolTable* table, char* varName, int value) {
@@ -229,7 +327,6 @@ void insert_string_arr_symbol(SymbolTable* table, char* varName, int size) {
     table->table[index] = newNode;
 }
 
-
 void update_string_arr_value(SymbolTable* table, char* id, int index, char* value) {
     // Find the symbol in the table
     Symbol* symbol = getSymbol(table, id);
@@ -323,10 +420,13 @@ void print_string_array(char** arr, int size) {
 
 
 // Function to print a single symbol table (used for each scope)
-void print_symbol_table(SymbolTable* table) {
+void print_symbol_table(SymbolTable* table, int indent) {
     for (int i = 0; i < table->size; i++) {
         SymbolNode* current = table->table[i];
+
         while (current != NULL) {
+            // Print indent level
+            for (int j = 0; j < indent; j++) printf(" ");
             printf("Variable: %s, Type: %s, TempVar: %s, Size: %d, Value: ",
                    current->key, current->var->type_str, current->var->tempVar, current->var->size);
 
@@ -347,6 +447,11 @@ void print_symbol_table(SymbolTable* table) {
             else if (strcmp(current->var->type_str, "STRING_ARRAY") == 0) {
                 print_string_array(current->var->value.stringArray, current->var->size);
             }
+            else
+            {
+                printf("\n");
+                print_symbol_table(current->var->value.structValue, 8);
+            }
 
             current = current->next;
         }
@@ -360,9 +465,9 @@ void print_table(OuterSymbolTable* outerTable) {
     for (int i = 0; i < outerTable->size; i++) {
         ScopeNode* currentScope = outerTable->table[i];
         while (currentScope != NULL) {
-            printf("Scope: %s, Type: %s\n", currentScope->key, currentScope->return_type);
+            printf("\nScope: %s, Type: %s\n", currentScope->key, currentScope->return_type);
             if (currentScope->scopeTable != NULL) {
-                print_symbol_table(currentScope->scopeTable);  // Print the associated symbol table
+                print_symbol_table(currentScope->scopeTable, 4);  // Print the associated symbol table
             } else {
                 printf("    (No symbols in this scope)\n");
             }
@@ -410,6 +515,7 @@ char* get_scope_type(OuterSymbolTable* outerTable, const char* scopeName) {
     return NULL;  
 }
 
+
 // Function to find a symbol in a specific scope
 int lookup_symbol(SymbolTable* symbolTable, const char* symbolName) {
 
@@ -449,7 +555,7 @@ void updateRegister(SymbolTable* table, const char* key, char* registerName) {
     Symbol* symbol = getSymbol(table, key);
     if (symbol != NULL) {
         symbol->tempVar = registerName;
-        print_symbol_table(table);
+        print_symbol_table(table, 0);
 
 
     } else {
@@ -474,4 +580,13 @@ SymbolTable* get_symbol_table(OuterSymbolTable* outerTable, const char* scopeNam
 
     printf("Scope '%s' not found!\n", scopeName);
     return NULL; 
+}
+
+Symbol* get_struct_variable(SymbolTable* table, const char* struct_id, const char* var_id) 
+{
+    Symbol* symbol = getSymbol(table, struct_id);
+    SymbolTable* struct_table = symbol->value.structValue;
+    symbol = getSymbol(struct_table, var_id);
+
+    return symbol;
 }

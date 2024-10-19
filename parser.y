@@ -34,6 +34,8 @@ void yyerror(const char* s) {
 
 /* Define token types */
 %token <string> KEYWORD
+%token <char> UNDERSCORE
+%token <string> STRUCT
 %token <string> TYPE
 %token <string> ARR
 %token <intval> INT
@@ -68,18 +70,19 @@ void yyerror(const char* s) {
 %nonassoc LPAR RPAR
 
 %printer { fprintf(yyoutput, "%s", $$); } ID;
-%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val ArrAssignemnt
+%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val ArrAssignemnt StructDeclList StructDecl
 %%
 
 program:
-    VarDeclList FuncDeclList StmntList
+    StructDeclList VarDeclList FuncDeclList StmntList
     {
         printf("The PARSER has started\n");
         root = malloc(sizeof(ASTNode));
 		root->type = NodeType_program;
-		root->program.VarDeclList = $1;
-        root->program.FuncDeclList = $2;
-		root->program.StmntList = $3;
+        root->program.StructDeclList = $1;
+		root->program.VarDeclList = $2;
+        root->program.FuncDeclList = $3;
+		root->program.StmntList = $4;
     }
      |
     StmntList
@@ -89,8 +92,35 @@ program:
         root->type = NodeType_program;
         root->program.StmntList = $1;
     }
-    ;
-    ;
+
+;
+
+StructDeclList:
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_StructDeclList;
+        $$->StructDeclList.StructDecl = NULL;
+        $$->StructDeclList.StructDeclList = NULL;
+    }
+    |
+    StructDecl StructDeclList
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_StructDeclList;
+        $$->StructDeclList.StructDecl = $1;
+        $$->StructDeclList.StructDeclList = $2;
+    }
+
+StructDecl:
+    STRUCT ID {insert_struct(outer_table, $2, 5); current_scope = $2;} LCURL VarDeclList RCURL
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_StructDecl;
+        $$->StructDecl.id = strdup($2);
+        $$->StructDecl.VarDeclList = $5;
+        current_scope = "global";
+        printf("PARSER: recognized struct declaration\n");
+    }
 
 VarDeclList:
     {$$ = malloc(sizeof(ASTNode));
@@ -187,7 +217,39 @@ VarDecl:
 
             exit(0);
         }
-        
+    }
+    |
+    UNDERSCORE ID ID SEMICOLON
+    {
+        if (lookup_scope(outer_table, $2) == 0)
+        {
+            printf("ERROR: Cannot find namespace %s\n", $2);
+            exit(1);
+        }
+
+        else if (strcmp(get_scope_type(outer_table, $2), "STRUCT") != 0)
+        {
+            printf("ERROR: %s is not of type struct", $2);
+            exit(1);
+        }
+
+        else if (lookup_symbol(get_symbol_table(outer_table, current_scope), $3) == 1)
+        {
+            printf("ERROR: variable %s has already been declared", $3);
+            exit(1);
+        }
+
+        else
+        {
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_VarDecl;
+            $$->VarDecl.type = strdup($2);
+			$$->VarDecl.id = strdup($3);
+            $$->VarDecl.size = 0;
+
+            insert_struct_symbol(get_symbol_table(outer_table, current_scope), $3, get_symbol_table(outer_table, $2), $2);
+            printf("PARSER: recognized struct creation\n");
+        }
     }
     |
     TYPE ID
@@ -699,10 +761,9 @@ int main() {
     }
 
     print_ast(root, 0);
-
     //Freeing the tree
     fclose(yyin);
-    print_table(outer_table);
+    //print_table(outer_table);
 
 
     

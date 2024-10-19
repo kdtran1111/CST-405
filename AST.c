@@ -15,6 +15,7 @@ void print_ast(ASTNode* node, int indent)
     switch (node->type) {
         case NodeType_program:
             printf("Program:\n");
+            print_ast(node->program.StructDeclList, indent + 1);
             print_ast(node->program.VarDeclList, indent + 1);
             print_ast(node->program.FuncDeclList, indent + 1);
             print_ast(node->program.StmntList, indent + 1);
@@ -111,6 +112,16 @@ void print_ast(ASTNode* node, int indent)
 
         case NodeType_WriteStmnt:
             printf("Write Statement: id = %s\n", node->WriteStmnt.id);
+            break;
+
+        case NodeType_StructDeclList:
+            printf("Struct Decl List:\n");
+            print_ast(node->StructDeclList.StructDecl, indent + 1);
+            print_ast(node->StructDeclList.StructDeclList, indent + 1);
+            break;
+        case NodeType_StructDecl:
+            printf("Struct Decl: ID = %s\n", node->StructDecl.id);
+            print_ast(node->StructDecl.VarDeclList, indent + 1);
             break;
         
         default:

@@ -27,7 +27,10 @@ typedef enum
     NodeType_ReturnStmnt,
     NodeType_IndexAssignment,
     NodeType_ValueList,
-    NodeType_ArrAssignment
+    NodeType_ArrAssignment,
+    NodeType_StructDeclList,
+    NodeType_StructDecl
+
 }NodeType;
 
 // structs for each node type
@@ -38,6 +41,7 @@ typedef struct ASTNode
     {
         struct
         {
+            struct ASTNode* StructDeclList;
             struct ASTNode* VarDeclList;
             struct ASTNode* StmntList;
             struct ASTNode* FuncDeclList;
@@ -166,6 +170,18 @@ typedef struct ASTNode
             char* id;
             struct ASTNode* ValueList;
         }ArrAssignment;
+
+        struct
+        {
+            struct ASTNode* StructDecl;
+            struct ASTNode* StructDeclList;
+        }StructDeclList;
+
+        struct
+        {
+            char* id;
+            struct ASTNode* VarDeclList;
+        }StructDecl;
         
     };
     
