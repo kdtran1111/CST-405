@@ -80,6 +80,11 @@ void print_ast(ASTNode* node, int indent)
             printf("Array Assignment: ID = %s\n", node->ArrAssignment.id);
             print_ast(node->ArrAssignment.ValueList, indent + 1);
             break;
+
+        case NodeType_StructMemberAssignment:
+            printf("Struct Member Assignment: ID = %s, Member ID = %s\n", node->StructMemberAssignment.id, node->StructMemberAssignment.member_id);
+            print_ast(node->StructMemberAssignment.Expr, indent + 1);
+            break;
         
         case NodeType_ValueList:
             printf("Value List:\n");
@@ -91,6 +96,11 @@ void print_ast(ASTNode* node, int indent)
             printf("Expression: Operator = %s\n", node->Expr.op);
             print_ast(node->Expr.left, indent + 1);
             print_ast(node->Expr.right, indent + 1);
+            break;
+
+        case NodeType_FunctionCall:
+            printf("Function Call: ID = %s\n", node->FunctionCall.id);
+            print_ast(node->FunctionCall.valueList, indent + 1);
             break;
 
         case NodeType_SimpleExpr:
@@ -109,9 +119,16 @@ void print_ast(ASTNode* node, int indent)
         case NodeType_SimpleArrIndex:
             printf("Simple Array Index: id = %s, index = %d\n", node->SimpleArrIndex.id, node->SimpleArrIndex.index);
             break;
+        case NodeType_SimpleStructMember:
+            printf("Simple Struct Member: id = %s, member id = %s\n", node->SimpleStructMember.id, node->SimpleStructMember.member_id);
+            break;
 
         case NodeType_WriteStmnt:
             printf("Write Statement: id = %s\n", node->WriteStmnt.id);
+            break;
+
+        case NodeType_TypeCast:
+            printf("Type Cast: type = %s, id = %s\n", node->TypeCast.type, node->TypeCast.id);
             break;
 
         case NodeType_StructDeclList:

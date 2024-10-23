@@ -18,6 +18,7 @@ typedef enum
     NodeType_SimpleFloat,
     NodeType_SimpleString,
     NodeType_SimpleArrIndex,
+    NodeType_SimpleStructMember,
     NodeType_Operand,
     NodeType_WriteStmnt,
     NodeType_FuncDeclList,
@@ -29,7 +30,10 @@ typedef enum
     NodeType_ValueList,
     NodeType_ArrAssignment,
     NodeType_StructDeclList,
-    NodeType_StructDecl
+    NodeType_StructDecl,
+    NodeType_StructMemberAssignment,
+    NodeType_FunctionCall,
+    NodeType_TypeCast
 
 }NodeType;
 
@@ -182,6 +186,33 @@ typedef struct ASTNode
             char* id;
             struct ASTNode* VarDeclList;
         }StructDecl;
+
+        struct
+        {
+            char* id;
+            char* member_id;
+            struct ASTNode* Expr;
+        }StructMemberAssignment;
+
+        struct
+        {
+            char* id;
+            char* member_id;
+        }SimpleStructMember;
+
+        struct 
+        {
+            char* id;
+            struct ASTNode* valueList;
+        }FunctionCall;
+
+        struct
+        {   
+            char* type;
+            char* id;
+        }TypeCast;
+        
+        
         
     };
     

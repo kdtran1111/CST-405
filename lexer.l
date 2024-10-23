@@ -142,6 +142,7 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 "{"         { chars++; printf("%s : LECURL\n", yytext); return LCURL; }
 "}"         { chars++; printf("%s : RCURL\n", yytext); return RCURL; }
 "_"			{ chars++; printf("%s : UNDERSCORE\n", yytext); return UNDERSCORE; }
+"."			{ chars++; printf("%s : PERIOD\n", yytext); return DOT; }
 
 
 [\r\n]+	{lines++; chars=0;}

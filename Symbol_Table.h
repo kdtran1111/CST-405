@@ -86,6 +86,7 @@ void print_table(OuterSymbolTable* outerTable);
 void print_symbol_table(SymbolTable* table, int indent);
 int lookup_scope(OuterSymbolTable* outerTable, const char* scopeName);
 int lookup_symbol(SymbolTable* symbolTable, const char* symbolName);
+int lookup_struct_variable(SymbolTable* table, const char* struct_id, const char* var_id);
 char* get_scope_type(OuterSymbolTable* outerTable, const char* scopeName);
 Symbol* get_struct_variable(SymbolTable* table, const char* struct_id, const char* var_id);
 

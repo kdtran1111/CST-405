@@ -35,6 +35,7 @@ void yyerror(const char* s) {
 /* Define token types */
 %token <string> KEYWORD
 %token <char> UNDERSCORE
+%token <char> DOT
 %token <string> STRUCT
 %token <string> TYPE
 %token <string> ARR
@@ -70,11 +71,11 @@ void yyerror(const char* s) {
 %nonassoc LPAR RPAR
 
 %printer { fprintf(yyoutput, "%s", $$); } ID;
-%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val ArrAssignemnt StructDeclList StructDecl
+%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val StructDeclList StructDecl
 %%
 
 program:
-    StructDeclList VarDeclList FuncDeclList StmntList
+    StructDeclList FuncDeclList VarDeclList StmntList
     {
         printf("The PARSER has started\n");
         root = malloc(sizeof(ASTNode));
@@ -507,37 +508,42 @@ Stmnt:
     |
     ID LPAR ValueList RPAR SEMICOLON
     {
-        if (lookup_scope(outer_table, $1) == 1)
+        if (lookup_scope(outer_table, $1) == 0)
         {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
+
+        else
+        {
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_FunctionCall;
+            $$->FunctionCall.id = $1;
+            $$->FunctionCall.valueList = $3;
             printf("PARSER: Recognized function call\n");
         }
-
-        else
-        {
-            printf("ERROR: Call to undefined function at line %d\n", lines);
-            exit(1);
-        }
     }
-    |
-    ID ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
-    {
-        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 0)
-        {
-            printf("ERROR: Used undeclared variable at line %d\n", lines);
-            exit(1);
-        }
+    // |
+    // ID ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
+    // {
+    //     if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 0)
+    //     {
+    //         printf("ERROR: Used undeclared variable at line %d\n", lines);
+    //         exit(1);
+    //     }
 
-        else if (lookup_scope(outer_table, $3) == 0)
-        {
-            printf("ERROR: Call to undefined function at line %d\n", lines);
-            exit(1);
-        }
+    //     else if (lookup_scope(outer_table, $3) == 0)
+    //     {
+    //         printf("ERROR: Call to undefined function at line %d\n", lines);
+    //         exit(1);
+    //     }
 
-        else
-        {
-            printf("PARSER: Recognized variable assignment to function call\n");
-        }
-    }
+    //     else
+    //     {
+    //         malloc
+    //         printf("PARSER: Recognized variable assignment to function call\n");
+    //     }
+    // }
     |
     ID LBRACKET INT RBRACKET ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
     {
@@ -563,6 +569,31 @@ Stmnt:
     ID ASSIGNMENT_OPERATOR LPAR TYPE RPAR Val SEMICOLON
     {
         printf("PARSER: Recognized type cast to %s\n", $4);
+    }
+    |
+    ID DOT ID ASSIGNMENT_OPERATOR Expr SEMICOLON
+    {
+        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 0)
+        {
+            printf("ERROR: ID %s was not declared in this scope\n", $1);
+            exit(1);
+        }
+        else if (lookup_struct_variable(get_symbol_table(outer_table, current_scope), $1, $3) == 0)
+        {
+            printf("ERROR: Struct has no member %s \n", $3);
+            exit(1);
+        }
+        
+
+        else
+        {
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_StructMemberAssignment;
+            $$->StructMemberAssignment.id = $1;
+            $$->StructMemberAssignment.member_id = $3;
+            $$->StructMemberAssignment.Expr = $5;
+            printf("PARSER: Recognized struct member assignment\n");
+        }
     }
 
 
@@ -730,6 +761,64 @@ Expr: Expr ARITHMETIC_OPERATOR Expr Expr:
         $$->type = NodeType_SimpleArrIndex;
         $$->SimpleArrIndex.index = $3;
         $$->SimpleArrIndex.id = strdup($1);
+    }
+    |
+    ID DOT ID
+    {
+
+        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 0)
+        {
+            printf("ERROR: ID %s was not declared in this scope\n", $1);
+            exit(1);
+        }
+        else if (lookup_struct_variable(get_symbol_table(outer_table, current_scope), $1, $3) == 0)
+        {
+            printf("ERROR: Struct has no member %s \n", $3);
+            exit(1);
+        }
+        
+
+        else
+        {
+            printf("PARSER: Recognized Struct Member expression\n");
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_SimpleStructMember;
+            $$->SimpleStructMember.id = $1;
+            $$->SimpleStructMember.member_id = $3;
+        }
+    }
+    |
+    ID LPAR ValueList RPAR
+    {
+        if (lookup_scope(outer_table, $1) == 0)
+        {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
+
+        else if(strcmp(get_scope_type(outer_table, $1), "void") == 0)
+        {
+            printf("ERROR: Function %s does not return a value\n", $1);
+            exit(1);
+        }
+
+        else
+        {
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_FunctionCall;
+            $$->FunctionCall.id = $1;
+            $$->FunctionCall.valueList = $3;
+            printf("PARSER: Recognized function call\n");
+        }
+    }
+    |
+    LPAR TYPE RPAR ID
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_TypeCast;
+        $$->TypeCast.type = $2;
+        $$->TypeCast.id = $4;
+        printf("PARSERL Recognized type cast");
     }
 ;
 

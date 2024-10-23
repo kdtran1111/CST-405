@@ -590,3 +590,10 @@ Symbol* get_struct_variable(SymbolTable* table, const char* struct_id, const cha
 
     return symbol;
 }
+
+int lookup_struct_variable(SymbolTable* table, const char* struct_id, const char* var_id)
+{
+    Symbol* symbol = getSymbol(table, struct_id);
+    SymbolTable* struct_table = symbol->value.structValue;
+    return lookup_symbol(struct_table, var_id);
+}
