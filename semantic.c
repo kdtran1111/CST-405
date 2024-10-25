@@ -119,7 +119,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
             }
             printf("Segmentation 3");
             check_variable_declared(symbol_Table, node->Stmnt.id, lines);  // Check if variable is declared
-            semanticAnalysis(node->Stmnt.Expr, symbol_Table);        // Analyze the expression on the right-hand side
+            semanticAnalysis(node->Stmnt.Expr, outer_table);        // Analyze the expression on the right-hand side
 
             // Check for type consistency and initialization
             check_type_consistency(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
@@ -175,9 +175,9 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
             */
             fprintf(stdout," check = %d\n", node->Expr.check);
             fprintf(stdout,"----------------left-------------\n");
-            semanticAnalysis(node->Expr.left, symbol_Table);
+            semanticAnalysis(node->Expr.left, outer_table);
             fprintf(stdout,"----------------right-------------\n");
-            semanticAnalysis(node->Expr.right, symbol_Table);
+            semanticAnalysis(node->Expr.right, outer_table);
             break;
 
         case NodeType_SimpleID:
@@ -254,18 +254,18 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
     // Traverse the AST recursively
    // switch (node->type) {
         case NodeType_program:
-            semanticAnalysis(node->program.VarDeclList, symbol_Table);
-            semanticAnalysis(node->program.StmntList, symbol_Table);
+            semanticAnalysis(node->program.VarDeclList, outer_table);
+            semanticAnalysis(node->program.StmntList, outer_table);
             break;
 
         case NodeType_VarDeclList:
-            semanticAnalysis(node->VarDeclList.VarDecl, symbol_Table);
-            semanticAnalysis(node->VarDeclList.VarDeclList, symbol_Table);
+            semanticAnalysis(node->VarDeclList.VarDecl, outer_table);
+            semanticAnalysis(node->VarDeclList.VarDeclList, outer_table);
             break;
 
         case NodeType_StmntList:
-            semanticAnalysis(node->StmntList.Stmnt, symbol_Table);
-            semanticAnalysis(node->StmntList.StmntList, symbol_Table);
+            semanticAnalysis(node->StmntList.Stmnt, outer_table);
+            semanticAnalysis(node->StmntList.StmntList, outer_table);
             break;
 
         default:
