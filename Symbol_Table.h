@@ -100,7 +100,7 @@ void update_int_arr_value(SymbolTable* table, char* id, int index, int value);
 void update_float_arr_value(SymbolTable* table, char* id, int index, float value);
 void update_string_arr_value(SymbolTable* table, char* id, int index, char* value);
 void updateRegister(SymbolTable* table, const char* key, char* registerName);
-void updateValue(SymbolTable* table, const char* key, int new_value);
+void updateValueInt(SymbolTable* table, const char* key, int new_value);
 
 // copy function
 SymbolTable* deep_copy_symbol_table(SymbolTable* original);

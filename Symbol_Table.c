@@ -618,9 +618,9 @@ char* getTempVar(Symbol* symbol) {
 
 // New function to update the value of a symbol. Not yet needed. Will eventually be add into effect
 //Trying new updateValue with TempVar
-void updateValue(SymbolTable* table, const char* key, int new_value) {
+void updateValueInt(SymbolTable* table, const char* key, int new_value) {
     Symbol* symbol = getSymbol(table, key);
-    if (symbol != NULL) {
+    if (symbol != NULL ) {
         symbol->value.intValue = new_value;
         //print_table(table);
        /*

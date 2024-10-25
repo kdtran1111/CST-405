@@ -12,10 +12,11 @@ char* writeID;
 TAC* tacHead = NULL;  // Global head of the TAC instructions list
 extern int declaredSymbol;
 extern int lines;
+
 OuterSymbolTable* outer_table;
 // Error handling function for semantic analysis
-void semantic_error(const char* message, int line) {
-    fprintf(stderr, "SEMANTIC ERROR (Line %d): %s\n", line, message);
+void semantic_error(const char* message, int lines) {
+    fprintf(stderr, "SEMANTIC ERROR (Line %d): %s\n", lines, message);
     //exit(1);
 }
 
@@ -56,44 +57,102 @@ void check_variable_initialized(SymbolTable* symbol_table, const char* id, int l
 void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* expr, int line) {
     SymbolTable* symbolTable = get_symbol_table(outer_table, global_scope);
     Symbol* symbol = getSymbol(symbolTable, id);
+     
     if (symbol == NULL) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Variable '%s' used before declaration", id);
-        semantic_error(error_message, lines);
+        semantic_error(error_message, line);
+        return;
     }
 
-
-    if (symbol->type == TYPE_INT && expr->type != NodeType_Expr && expr->type != NodeType_SimpleExpr) {
-    // This will allow both integer literals and expressions
-
-    char error_message[256];
-    snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
-    semantic_error(error_message, lines);
-}
-    /*
-    // Perform type checking based on the expression's type
-    if (strcmp(symbol->type, "int") == 0 && expr->type != NodeType_SimpleExpr) {
-        char error_message[256];
-        snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
-        semantic_error(error_message, lines);
-    }
-    */
-    if (symbol->type == TYPE_FLOAT && expr->type != NodeType_SimpleExpr) {
+    // Print debug information
+    printf("Debug: Variable '%s' has type %s, expr->type is %d\n", id, symbol->type_str, expr->type);
+    //Check for Float type
+    if (strcmp(symbol->type_str, "FLOAT") == 0 && expr->type != NodeType_SimpleFloat) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is a float, but assigned a non-float value", id);
         semantic_error(error_message, lines);
+        return;
     }
-
+    //Check for Int type
+    if (strcmp(symbol->type_str, "INT")==0  && expr->type != NodeType_Expr && expr->type != NodeType_SimpleExpr) {
+        char error_message[256];
+        snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
+        semantic_error(error_message, lines);
+        return;
+    }
+    
     // Add more type checks as necessary
 }
+// Check if the array is already declared in the symbol table
+void check_array_not_redeclared(SymbolTable* table, const char* id, int line) {
+    if (lookup_symbol(table, id) != 0) {
+        char errorMsg[100];
+        snprintf(errorMsg, sizeof(errorMsg), "Array '%s' has already been declared.", id);
+        semantic_error(errorMsg, line);
+    }
+}
 
+// Check if the array type is valid
+void check_array_type(const char* type, int line) {
+    if (strcmp(type, "int") != 0 && strcmp(type, "float") != 0 && strcmp(type, "string") != 0) {
+        char errorMsg[100];
+        snprintf(errorMsg, sizeof(errorMsg), "Invalid array type '%s'. Allowed types are int, float, and string.", type);
+        semantic_error(errorMsg, line);
+    }
+}
+
+// Check if the array size is valid (positive integer)
+void check_array_size(int size, int line) {
+    if (size <= 0) {
+        char errorMsg[100];
+        snprintf(errorMsg, sizeof(errorMsg), "Invalid array size '%d'. Size must be a positive integer.", size);
+        semantic_error(errorMsg, line);
+    }
+}
+
+// Main function to perform all semantic checks on an array declaration
+void check_array_declaration(SymbolTable* table, const char* type, const char* id, int size, int line) {
+    check_array_not_redeclared(table, id, line);
+    check_array_type(type, line);
+    check_array_size(size, line);
+}
 // Recursive function for semantic analysis and TAC generation
 void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
     if (node == NULL) return;
     
+    printf("semanticAnalysis: Processing node of type %d\n", node->type);
+    SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
     switch (node->type) {
         case NodeType_VarDecl:
+            semanticAnalysis(node->VarDecl.id, outer_table); 
+            //semanticAnalysis(node->Stmnt.Expr, outer_table); 
+             printf("Entering NodeType_VarDecl: %s\n", node->VarDecl.id);
+             printf("semanticAnalysis: Found VarDecl node for ID %s\n", node->VarDecl.id);
+            // If this is an array declaration, perform semantic checks
+            if (node->VarDecl.size > 0) {  // Assuming size > 0 indicates an array
+                printf("Semantic analysis for array declaration: %s\n", node->VarDecl.id);
+                check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
+                // ...
+            }
             // Variable declaration
+             // If this is an array declaration, perform semantic checks
+            if (node->VarDecl.size > 0) {  // Assuming size > 0 indicates an array
+                printf("Semantic analysis for array declaration: %s\n", node->VarDecl.id);
+
+                // Perform array semantic checks
+                check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
+                /*
+                // After validation, insert the array symbol into the symbol table
+                if (strcmp(node->VarDecl.type, "int_arr") == 0) {
+                    insert_int_arr_symbol(symbol_Table, node->VarDecl.id, node->VarDecl.size);
+                } else if (strcmp(node->VarDecl.type, "float_arr") == 0) {
+                    insert_float_arr_symbol(symbol_Table, node->VarDecl.id, node->VarDecl.size);
+                } else if (strcmp(node->VarDecl.type, "string_arr") == 0) {
+                    insert_string_arr_symbol(symbol_Table, node->VarDecl.id, node->VarDecl.size);
+                }
+                */
+            }
             break;
 
         case NodeType_Stmnt:
@@ -104,36 +163,30 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
 }
             fprintf(stdout,"Semantic analysis for statement, curr ID is %s\n", currentID);
             //Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);
-            printf("Segmentation 1");
-            SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
+          
+            
             if (symbol_Table == NULL) {
                 fprintf(stderr, "Error: Symbol table not found\n");
                 return;
             }
             
-            printf("Segmentation 2");
             Symbol* symbol = getSymbol(symbol_Table, currentID);
             if (symbol == NULL) {
                 fprintf(stderr, "Error: Symbol not found for ID: %s\n", currentID);
                 return;
             }
-            printf("Segmentation 3");
+            
             check_variable_declared(symbol_Table, node->Stmnt.id, lines);  // Check if variable is declared
             semanticAnalysis(node->Stmnt.Expr, outer_table);        // Analyze the expression on the right-hand side
 
             // Check for type consistency and initialization
             check_type_consistency(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
-            
-            // Fetch the variable symbol to update
-            
-            //int temp = lookup(symbol_Table, node->Stmnt.id);
-            //fprintf(stdout,"Temp: %d\n",temp);
-             
+          
             if (symbol != NULL && node->Stmnt.Expr->type == NodeType_SimpleExpr) {
                 TAC* newTac = (TAC*)malloc(sizeof(TAC));
             // Assuming the expression has an integer literal, update the variable's value
 
-            updateValue(symbol_Table, node->Stmnt.id, node->Stmnt.Expr->SimpleExpr.value);
+            updateValueInt(symbol_Table, node->Stmnt.id, node->Stmnt.Expr->SimpleExpr.value);
             fprintf(stdout,"updateValue has no problem\n");
            
             fprintf(stdout,"Generating TAC for simple expression\n");
@@ -143,36 +196,16 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
             newTac->arg1 = strdup(buffer);  // Literal value
             newTac->op = "=";  // Assignment operator
             newTac->arg2 = NULL;
-            //Symbol* TACsymbol = getSymbol(symbol_table,expr->Stmnt.id);
-           
-           // char* temp = getTempVar(symbol_table, expr->Stmnt.id);
-            //newTac->result = getTempVar(symbol_table,);
             newTac->result = getTempVar(symbol);
             appendTAC(&tacHead,newTac);
 
             //newTac->result=createTempVar();
             fprintf(stdout,"Generated in generateTAC in simpleExpr\n");
             }
-
-            
-            // Generate TAC for the assignment statement
-           // TAC* tac = generateTACForExpr(node->Stmnt.Expr);
-            //appendTAC(&tacHead, tac);
-            //fprintf(stdout,"Tac is fine\n");
-            // Automatically update the value in the symbol table
-            //int resultValue = evaluateExpression(node->Stmnt.expression, symbol_table);
-            //updateValue(symbol_table, node->Stmnt.id, resultValue);  // Update the value of the variable after the assignment
             break;
         case NodeType_Expr:
             // Recursively analyze left and right expressions
-            //Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);
-            /*
-            if (node->Expr.check == NULL){
-            node->Expr.check=3;
-            } else if (node->Expr.check == 0 ){
-                node->Expr.check = 1;
-            }
-            */
+            
             fprintf(stdout," check = %d\n", node->Expr.check);
             fprintf(stdout,"----------------left-------------\n");
             semanticAnalysis(node->Expr.left, outer_table);
@@ -217,44 +250,16 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
             break;
         }
 
-        /*
-        case NodeType_WriteStmnt: {
-            
-            semanticAnalysis(node->StmntList.Stmnt,symbol_table);
-            if (node->StmntList.Stmnt->type == NodeType_SimpleID) {
-            currentID = node->StmntList.Stmnt->SimpleID.id;  // Update currentID to 'x'
-            } else {
-        // Handle other cases, such as expressions
-            semantic_error("Invalid statement in write", lines);
-            }
-
-            fprintf(stdout,"WriteStmnt: CurrentID is %s\n", currentID);  // Debugging print
-            TAC* newTac = (TAC*)malloc(sizeof(TAC));
-            
-            newTac->keyword =(char*)"write";
-            char* write = strdup(newTac->keyword);
-            fprintf(stdout,"Write: %s\n",write);
-            fprintf(stdout,"WriteStmID: %s\n",currentID);
-            newTac->arg1 = symbol->tempVar;
-            //char* WriteTempVar = strdup(newTac->arg1);   //this is where segmentation fault happen
-            fprintf(stdout,"WriteTempVar: %s\n",symbol->tempVar);
-            //char* write = strdup(newTac->keyword);  
-            //fprintf(stdout,"Write: %s\n",write);
-            appendTAC(&tacHead,newTac);
-           /*
-            //Symbol* symbol = getSymbol(symbol_table, currentID);
-            newTac->arg1 = symbol->tempVar;
-            fprintf(stdout,"Symbol: %s\n", symbol->tempVar);
-            fprintf(stdout,"WriteTempVar: %s\n", symbol);
-            appendTAC(&tacHead,newTac);
-            
-            break;
-        }
-        */
     // Traverse the AST recursively
-   // switch (node->type) {
+  
         case NodeType_program:
+            /*
             semanticAnalysis(node->program.VarDeclList, outer_table);
+            semanticAnalysis(node->program.StmntList, outer_table);
+            */
+            printf("Traversing VarDeclList in program\n");
+            semanticAnalysis(node->program.VarDeclList, outer_table);
+            printf("Traversing StmntList in program\n");
             semanticAnalysis(node->program.StmntList, outer_table);
             break;
 
@@ -266,6 +271,88 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
         case NodeType_StmntList:
             semanticAnalysis(node->StmntList.Stmnt, outer_table);
             semanticAnalysis(node->StmntList.StmntList, outer_table);
+            break;
+
+
+        // New cases for remaining NodeTypes
+        case NodeType_SimpleFloat:
+            // Handle float constant or variable logic here
+            break;
+
+        case NodeType_SimpleString:
+            // Handle string constant or variable logic here
+            break;
+
+        case NodeType_SimpleArrIndex:
+            // Array indexing logic, such as bounds checking
+            break;
+
+        case NodeType_SimpleStructMember:
+            // Handle struct member access logic
+            break;
+
+        case NodeType_Operand:
+            // Handle operand analysis logic here
+            break;
+
+        case NodeType_FuncDeclList:
+            // Function declaration list traversal
+            semanticAnalysis(node->FuncDeclList.FuncDecl, outer_table);
+            semanticAnalysis(node->FuncDeclList.FuncDeclList, outer_table);
+            break;
+
+        case NodeType_FuncDecl:
+            // Analyze function declarations here
+            break;
+
+        case NodeType_ParamList:
+            // Traverse parameter list
+            semanticAnalysis(node->ParamList.Param, outer_table);
+            semanticAnalysis(node->ParamList.ParamList, outer_table);
+            break;
+
+        case NodeType_Param:
+            // Analyze individual parameters
+            break;
+
+        case NodeType_ReturnStmnt:
+            // Analyze return statement and check type consistency
+            break;
+
+        case NodeType_IndexAssignment:
+            // Array index assignment logic
+            break;
+
+        case NodeType_ValueList:
+            // Traverse list of values (array or other collection)
+            semanticAnalysis(node->ValueList.Val, outer_table);
+            semanticAnalysis(node->ValueList.ValueList, outer_table);
+            break;
+
+        case NodeType_ArrAssignment:
+            // Array assignment logic
+            break;
+
+        case NodeType_StructDeclList:
+            // Struct declaration list traversal
+            semanticAnalysis(node->StructDeclList.StructDecl, outer_table);
+            semanticAnalysis(node->StructDeclList.StructDeclList, outer_table);
+            break;
+
+        case NodeType_StructDecl:
+            // Struct declaration logic
+            break;
+
+        case NodeType_StructMemberAssignment:
+            // Struct member assignment logic
+            break;
+
+        case NodeType_FunctionCall:
+            // Handle function call, check arguments and return type
+            break;
+
+        case NodeType_TypeCast:
+            // Type casting logic
             break;
 
         default:
@@ -318,14 +405,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             if( newTac->arg2 ==NULL){
                 fprintf(stdout,"!!!!!!!!  arg2 is null  !!!!!!!\n");
             }
-            /*
-            fprintf(stdout,"Temp Result is NULL \n");
-            } else if (tempResult != NULL) {
-
-            fprintf(stdout," check = %d\n", expr->Expr.check);
-            newTac->arg2 = (char*)tempResult;
-            }
-            */
+         
             // Create a new temp var for the result of the expression
             
             tempResult = (char*)newTac->result;  
