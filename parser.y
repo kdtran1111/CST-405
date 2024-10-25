@@ -18,7 +18,7 @@ SymbolTable* current_table;
 ASTNode* root;
 
 void yyerror(const char* s) {
-    fprintf(stderr, "Parse error: %s\n at line %s\n", s, lines);
+    fprintf(stderr, "Parse error: %s\n at line \n", s);
     fflush(stderr); // Flush stderr to ensure error messages are printed
     exit(1);
 }
