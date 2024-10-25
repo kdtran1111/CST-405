@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "semantic.h"
+#include "Symbol_Table.h"
+//#include "parser.y"
+char* global_scope = "global";
 
 int tempVars[20];
 char* currentID;
@@ -9,15 +12,22 @@ char* writeID;
 TAC* tacHead = NULL;  // Global head of the TAC instructions list
 extern int declaredSymbol;
 extern int lines;
+OuterSymbolTable* outer_table;
 // Error handling function for semantic analysis
 void semantic_error(const char* message, int line) {
     fprintf(stderr, "SEMANTIC ERROR (Line %d): %s\n", line, message);
     //exit(1);
 }
 
+void def_outer_table_semantic(OuterSymbolTable* outer_table_semantic){
+    outer_table= outer_table_semantic;
+};
 // Check if a variable is declared
+//ignore the incorrect parameter
 void check_variable_declared(SymbolTable* symbol_table, const char* id, int line) {
-    Symbol* symbol = getSymbol(symbol_table, id);
+    
+    SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
+    Symbol* symbol = getSymbol(symbol_Table, id);
     if (symbol == NULL) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Variable '%s' used before declaration", id);
@@ -27,14 +37,15 @@ void check_variable_declared(SymbolTable* symbol_table, const char* id, int line
 
 // Check if a variable has been assigned a value
 void check_variable_initialized(SymbolTable* symbol_table, const char* id, int line) {
-    Symbol* symbol = getSymbol(symbol_table, id);
+    SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
+    Symbol* symbol = getSymbol(symbol_Table, id);
     if (symbol == NULL) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Variable '%s' used before declaration", id);
         semantic_error(error_message, lines);
     }
     
-    if (symbol->value == 0) {
+    if (symbol/*->value */== 0) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Variable '%s' used without being assigned a value, therefore default value is 0", id);
         semantic_error(error_message, lines);
@@ -43,8 +54,8 @@ void check_variable_initialized(SymbolTable* symbol_table, const char* id, int l
 
 // Check for type consistency during assignments
 void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* expr, int line) {
-    Symbol* symbol = getSymbol(symbol_table, id);
-    
+    SymbolTable* symbolTable = get_symbol_table(outer_table, global_scope);
+    Symbol* symbol = getSymbol(symbolTable, id);
     if (symbol == NULL) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Variable '%s' used before declaration", id);
@@ -52,8 +63,9 @@ void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* 
     }
 
 
-    if (strcmp(symbol->type, "int") == 0 && expr->type != NodeType_Expr && expr->type != NodeType_SimpleExpr) {
+    if (symbol->type == TYPE_INT && expr->type != NodeType_Expr && expr->type != NodeType_SimpleExpr) {
     // This will allow both integer literals and expressions
+
     char error_message[256];
     snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
     semantic_error(error_message, lines);
@@ -66,7 +78,7 @@ void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* 
         semantic_error(error_message, lines);
     }
     */
-    if (strcmp(symbol->type, "float") == 0 && expr->type != NodeType_SimpleExpr) {
+    if (symbol->type == TYPE_FLOAT && expr->type != NodeType_SimpleExpr) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is a float, but assigned a non-float value", id);
         semantic_error(error_message, lines);
@@ -76,7 +88,7 @@ void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* 
 }
 
 // Recursive function for semantic analysis and TAC generation
-void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
+void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
     if (node == NULL) return;
     
     switch (node->type) {
@@ -86,27 +98,45 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
 
         case NodeType_Stmnt:
             currentID  = node->Stmnt.id;
-            printf("Semantic analysis for statement, curr ID is %s\n", node->Stmnt.id);
-            Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);
-            check_variable_declared(symbol_table, node->Stmnt.id, lines);  // Check if variable is declared
-            semanticAnalysis(node->Stmnt.Expr, symbol_table);        // Analyze the expression on the right-hand side
+            if (currentID == NULL) {
+            fprintf(stderr, "Error: currentID is NULL\n");
+            return;
+}
+            fprintf(stdout,"Semantic analysis for statement, curr ID is %s\n", currentID);
+            //Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);
+            printf("Segmentation 1");
+            SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
+            if (symbol_Table == NULL) {
+                fprintf(stderr, "Error: Symbol table not found\n");
+                return;
+            }
+            
+            printf("Segmentation 2");
+            Symbol* symbol = getSymbol(symbol_Table, currentID);
+            if (symbol == NULL) {
+                fprintf(stderr, "Error: Symbol not found for ID: %s\n", currentID);
+                return;
+            }
+            printf("Segmentation 3");
+            check_variable_declared(symbol_Table, node->Stmnt.id, lines);  // Check if variable is declared
+            semanticAnalysis(node->Stmnt.Expr, symbol_Table);        // Analyze the expression on the right-hand side
 
             // Check for type consistency and initialization
-            check_type_consistency(symbol_table, node->Stmnt.id, node->Stmnt.Expr, lines);
+            check_type_consistency(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
             
             // Fetch the variable symbol to update
             
-            int temp = lookup(symbol_table, node->Stmnt.id);
-            printf("Temp: %d\n",temp);
+            //int temp = lookup(symbol_Table, node->Stmnt.id);
+            //fprintf(stdout,"Temp: %d\n",temp);
              
             if (symbol != NULL && node->Stmnt.Expr->type == NodeType_SimpleExpr) {
                 TAC* newTac = (TAC*)malloc(sizeof(TAC));
             // Assuming the expression has an integer literal, update the variable's value
 
-            updateValue(symbol_table, node->Stmnt.id, node->Stmnt.Expr->SimpleExpr.value);
-            printf("updateValue has no problem\n");
+            updateValue(symbol_Table, node->Stmnt.id, node->Stmnt.Expr->SimpleExpr.value);
+            fprintf(stdout,"updateValue has no problem\n");
            
-            printf("Generating TAC for simple expression\n");
+            fprintf(stdout,"Generating TAC for simple expression\n");
             char buffer[20];
             //char* tempVar= getTempVar(symbol_table,expr->Stmnt.id);
             snprintf(buffer, 20, "%d", node->Stmnt.Expr->SimpleExpr.value);
@@ -121,14 +151,14 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
             appendTAC(&tacHead,newTac);
 
             //newTac->result=createTempVar();
-            printf("Generated in generateTAC in simpleExpr\n");
+            fprintf(stdout,"Generated in generateTAC in simpleExpr\n");
             }
 
             
             // Generate TAC for the assignment statement
            // TAC* tac = generateTACForExpr(node->Stmnt.Expr);
             //appendTAC(&tacHead, tac);
-            //printf("Tac is fine\n");
+            //fprintf(stdout,"Tac is fine\n");
             // Automatically update the value in the symbol table
             //int resultValue = evaluateExpression(node->Stmnt.expression, symbol_table);
             //updateValue(symbol_table, node->Stmnt.id, resultValue);  // Update the value of the variable after the assignment
@@ -143,15 +173,15 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
                 node->Expr.check = 1;
             }
             */
-            printf(" check = %d\n", node->Expr.check);
-            printf("----------------left-------------\n");
-            semanticAnalysis(node->Expr.left, symbol_table);
-            printf("----------------right-------------\n");
-            semanticAnalysis(node->Expr.right, symbol_table);
+            fprintf(stdout," check = %d\n", node->Expr.check);
+            fprintf(stdout,"----------------left-------------\n");
+            semanticAnalysis(node->Expr.left, symbol_Table);
+            fprintf(stdout,"----------------right-------------\n");
+            semanticAnalysis(node->Expr.right, symbol_Table);
             break;
 
         case NodeType_SimpleID:
-            check_variable_initialized(symbol_table, node->SimpleID.id, lines);  // Line number passed as placeholder
+            check_variable_initialized(symbol_Table, node->SimpleID.id, lines);  // Line number passed as placeholder
             break;
 
         case NodeType_SimpleExpr:
@@ -162,10 +192,10 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
         case NodeType_WriteStmnt: {
             // The id of the variable in the write statement is stored in WriteStmnt.id
             currentID = node->WriteStmnt.id;  // Set currentID to the variable being written
-            printf("WriteStmnt: CurrentID is %s\n", currentID);  // Debugging print
+            fprintf(stdout,"WriteStmnt: CurrentID is %s\n", currentID);  // Debugging print
 
             // Fetch the symbol for currentID from the symbol table
-            Symbol* symbol = getSymbol(symbol_table, currentID);
+            Symbol* symbol = getSymbol(symbol_Table, currentID);
             if (symbol != NULL) {
                 // Generate TAC for the write statement
                 TAC* newTac = (TAC*)malloc(sizeof(TAC));
@@ -198,24 +228,24 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
             semantic_error("Invalid statement in write", lines);
             }
 
-            printf("WriteStmnt: CurrentID is %s\n", currentID);  // Debugging print
+            fprintf(stdout,"WriteStmnt: CurrentID is %s\n", currentID);  // Debugging print
             TAC* newTac = (TAC*)malloc(sizeof(TAC));
             
             newTac->keyword =(char*)"write";
             char* write = strdup(newTac->keyword);
-            printf("Write: %s\n",write);
-            printf("WriteStmID: %s\n",currentID);
+            fprintf(stdout,"Write: %s\n",write);
+            fprintf(stdout,"WriteStmID: %s\n",currentID);
             newTac->arg1 = symbol->tempVar;
             //char* WriteTempVar = strdup(newTac->arg1);   //this is where segmentation fault happen
-            printf("WriteTempVar: %s\n",symbol->tempVar);
+            fprintf(stdout,"WriteTempVar: %s\n",symbol->tempVar);
             //char* write = strdup(newTac->keyword);  
-            //printf("Write: %s\n",write);
+            //fprintf(stdout,"Write: %s\n",write);
             appendTAC(&tacHead,newTac);
            /*
             //Symbol* symbol = getSymbol(symbol_table, currentID);
             newTac->arg1 = symbol->tempVar;
-            printf("Symbol: %s\n", symbol->tempVar);
-            printf("WriteTempVar: %s\n", symbol);
+            fprintf(stdout,"Symbol: %s\n", symbol->tempVar);
+            fprintf(stdout,"WriteTempVar: %s\n", symbol);
             appendTAC(&tacHead,newTac);
             
             break;
@@ -224,25 +254,25 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
     // Traverse the AST recursively
    // switch (node->type) {
         case NodeType_program:
-            semanticAnalysis(node->program.VarDeclList, symbol_table);
-            semanticAnalysis(node->program.StmntList, symbol_table);
+            semanticAnalysis(node->program.VarDeclList, symbol_Table);
+            semanticAnalysis(node->program.StmntList, symbol_Table);
             break;
 
         case NodeType_VarDeclList:
-            semanticAnalysis(node->VarDeclList.VarDecl, symbol_table);
-            semanticAnalysis(node->VarDeclList.VarDeclList, symbol_table);
+            semanticAnalysis(node->VarDeclList.VarDecl, symbol_Table);
+            semanticAnalysis(node->VarDeclList.VarDeclList, symbol_Table);
             break;
 
         case NodeType_StmntList:
-            semanticAnalysis(node->StmntList.Stmnt, symbol_table);
-            semanticAnalysis(node->StmntList.StmntList, symbol_table);
+            semanticAnalysis(node->StmntList.Stmnt, symbol_Table);
+            semanticAnalysis(node->StmntList.StmntList, symbol_Table);
             break;
 
         default:
             break;
     }
     if (node->type == NodeType_Expr ) {
-        TAC* tac = generateTACForExpr(node,symbol_table);
+        TAC* tac = generateTACForExpr(node,outer_table);
         // Process or store the generated TAC
         //printTAC(tac);
         appendTAC(&tacHead,tac);
@@ -253,9 +283,11 @@ void semanticAnalysis(ASTNode* node, SymbolTable* symbol_table) {
 
 }
 
-TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table) {
+TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
+    SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
+    Symbol* symbol = getSymbol(symbol_Table, currentID);
     if (expr == NULL) {
-        printf("Error: Expression is NULL.\n");
+        fprintf(stdout,"Error: Expression is NULL.\n");
         return NULL;
     }
     char* tempResult;
@@ -264,45 +296,45 @@ TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table) {
     
     switch (expr->type) {
         case NodeType_Expr: {
-            printf("Generating TAC for expression\n");
+            fprintf(stdout,"Generating TAC for expression\n");
             newTac->op = strdup(expr->Expr.op); // e.g., "+", "-", "*", etc.
             tempResult = createTempVar();
 
             newTac->result = strdup(tempResult);
-            updateRegister(symbol_table, currentID, newTac->result);
+            updateRegister(symbol_Table, currentID, newTac->result);
             
             // Reuse temp vars for operands (x and y)
-            newTac->arg1 = createOperand(expr->Expr.left, symbol_table);  // Left operand (e.g., t0 for x)
+            newTac->arg1 = createOperand(expr->Expr.left, symbol_Table);  // Left operand (e.g., t0 for x)
            
-            printf( "TempResult is: %s\n", tempResult);// DEbug
+            fprintf(stdout, "TempResult is: %s\n", tempResult);// DEbug
             if (tempResult){
             //if(strcmp(newTac->result, tempResult) == 0){
-            newTac->arg2 = createOperand(expr->Expr.right, symbol_table); // Right operand (e.g., t1 for y)
+            newTac->arg2 = createOperand(expr->Expr.right, symbol_Table); // Right operand (e.g., t1 for y)
             } else if (strcmp(newTac->result, tempResult) >0){
             newTac->arg2=tempResult;
-            printf("tempResult is larger than result\n");
+            fprintf(stdout,"tempResult is larger than result\n");
             }
 
             if( newTac->arg2 ==NULL){
-                printf("!!!!!!!!  arg2 is null  !!!!!!!\n");
+                fprintf(stdout,"!!!!!!!!  arg2 is null  !!!!!!!\n");
             }
             /*
-            printf("Temp Result is NULL \n");
+            fprintf(stdout,"Temp Result is NULL \n");
             } else if (tempResult != NULL) {
 
-            printf(" check = %d\n", expr->Expr.check);
+            fprintf(stdout," check = %d\n", expr->Expr.check);
             newTac->arg2 = (char*)tempResult;
             }
             */
             // Create a new temp var for the result of the expression
             
             tempResult = (char*)newTac->result;  
-            printf( "TempResult: %s\n", tempResult); //Debug
-            printf("GEnerated in generateTAC\n");
+            fprintf(stdout, "TempResult: %s\n", tempResult); //Debug
+            fprintf(stdout,"GEnerated in generateTAC\n");
             newTac->next = NULL;
             //expr->Expr.check=1;
 
-            printf("Generated TAC: %s = %s %s %s\n", newTac->result, newTac->arg1, newTac->op, newTac->arg2);
+            fprintf(stdout,"Generated TAC: %s = %s %s %s\n", newTac->result, newTac->arg1, newTac->op, newTac->arg2);
             break;
         }
         case NodeType_SimpleExpr: {
@@ -312,7 +344,7 @@ TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table) {
         }
 
         default:
-            printf("Unhandled expression type\n");
+            fprintf(stdout,"Unhandled expression type\n");
             break;
     }
 
@@ -331,11 +363,11 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
                 snprintf(operand, 32, "");  // Debug empty case
             //debug
                 if(symbol==NULL){
-                    printf("symbolNULL\n");
+                    fprintf(stdout,"symbolNULL\n");
                 } else if (symbol->tempVar==NULL){
-                    printf("tempVarNULL\n");
+                    fprintf(stdout,"tempVarNULL\n");
                 }
-                printf("Warning: TempVar not found for SimpleID '%s'\n", node->SimpleID.id);
+                fprintf(stdout,"Warning: TempVar not found for SimpleID '%s'\n", node->SimpleID.id);
             }
             break;
         }
@@ -355,7 +387,7 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
 void printTAC(TAC* tac) {
     TAC* current = tac;
     while (current != NULL) {
-        printf("%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
+        fprintf(stdout,"%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
         current = current->next;
     }
 }
@@ -400,7 +432,7 @@ void deallocateTempVar(int tempVars[], int index) {
 
 // Print the TAC instructions to a file
 void printTACToFile(const char* filename, TAC* tac) {
-    printf("--------------Printing TAC to file---------------\n");
+    fprintf(stdout,"--------------Printing TAC to file---------------\n");
 
     FILE* file = fopen(filename, "w");
     if (file == NULL) {
@@ -421,16 +453,16 @@ void printTACToFile(const char* filename, TAC* tac) {
             }
 
             fprintf(file, "%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
-            printf("%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
+            fprintf(stdout,"%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
         }
         //avoid printing NULL into the TAC when it's simpleExpr 
         else if ( current->result!=NULL) {
         
         fprintf(file, "%s = %s\n", current->result, current->arg1);
-        printf("%s = %s\n", current->result, current->arg1);
+        fprintf(stdout,"%s = %s\n", current->result, current->arg1);
         } else{
         fprintf(file, "%s %s\n", current->keyword, current->arg1);
-        printf("%s %s\n", current->keyword, current->arg1);
+        fprintf(stdout,"%s %s\n", current->keyword, current->arg1);
         }
 
         if (cntr >= 1)
@@ -455,7 +487,6 @@ char* createTempVar() {
     static int tempCounter = 0;
     char* tempVar = (char*)malloc(10 * sizeof(char));
     snprintf(tempVar, 10, "t%d", tempCounter++);
-    printf("Temp var created: %s\n", tempVar);
+    fprintf(stdout,"Temp var created: %s\n", tempVar);
     return tempVar;
 }
-//char* tempVarForSimpExpr(SymbolTable symbol_table, ){

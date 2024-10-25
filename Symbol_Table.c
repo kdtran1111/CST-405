@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "Symbol_Table.h"
-//#include "semantic.h"
+#include "semantic.h"
 
 
 // Function to create a symbol table for variables in a scope
@@ -596,4 +596,44 @@ int lookup_struct_variable(SymbolTable* table, const char* struct_id, const char
     Symbol* symbol = getSymbol(table, struct_id);
     SymbolTable* struct_table = symbol->value.structValue;
     return lookup_symbol(struct_table, var_id);
+}
+
+// Function to get tempVar from the symbol table based on the given key
+char* getTempVar(Symbol* symbol) {
+    // Check for valid table and key
+    if (symbol == NULL) {
+        printf("Error: Symbol is NULL\n");
+        return NULL;
+    }else{
+        return symbol->tempVar;
+    }
+
+
+    // If the symbol is not found in the table
+    printf("Error: Symbol not found in the symbol table\n");
+    return NULL;
+}
+
+
+
+// New function to update the value of a symbol. Not yet needed. Will eventually be add into effect
+//Trying new updateValue with TempVar
+void updateValue(SymbolTable* table, const char* key, int new_value) {
+    Symbol* symbol = getSymbol(table, key);
+    if (symbol != NULL) {
+        symbol->value.intValue = new_value;
+        //print_table(table);
+       /*
+       No need to update tempVar since it's still be in the same register with the declaration of the variable
+       */
+        // If this is the first time assigning a value, create a temp variable
+        if (symbol->tempVar == NULL) {
+            symbol->tempVar = createTempVar();
+            printf("new temp var created in updateaValue():   %s\n", symbol->tempVar);
+        }
+        
+        printf("Updated value of %s to %d with tempVar %s\n", key, new_value, symbol->tempVar);
+    } else {
+        printf("ERROR: Symbol %s not found in the symbol table\n", key);
+    }
 }

@@ -56,7 +56,6 @@ ArithmeticOperator    [-+*/]
 "arr"		{ words++; chars += strlen(yytext); printf("%s : ARR\n", yytext); return ARR; }
 "func"		{ words++; chars += strlen(yytext); printf("%s : FUNC\n", yytext); return FUNC; }
 "void"		{ words++; chars += strlen(yytext); printf("%s : VOID\n", yytext); return VOID; }
-"struct"	{ words++; chars += strlen(yytext); printf("%s : STRUCT\n", yytext); return STRUCT; }
 
 int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 printf("%s : TYPE\n", yytext);
@@ -73,21 +72,13 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 
 {FLOAT}	{words++; chars += strlen(yytext);
 			  printf("%s : FLOAT\n",yytext);
-			  yylval.floatval = atof(yytext);
 			  return FLOAT;
 			}
 
-{STRING} {// Strip the surrounding quotes
-		int len = strlen(yytext);
-        char stripped[len - 1]; 
-        strncpy(stripped, yytext + 1, len - 2); 
-        stripped[len - 2] = '\0'; // Null-terminate the string
-
-        words++; 
-        chars += len - 2; // Update character count without the quotes
-        printf("%s : STRING\n", stripped); 
-		yylval.string = strdup(stripped);
-        return STRING;
+{STRING} {words++; 
+		 chars += strlen(yytext);
+		 printf("%s : STRING\n", yytext);
+		 return STRING;
 		 }
 
 {CHAR} {words++; 
@@ -107,6 +98,12 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 return ID;
 		}
 
+{ArithmeticOperator} 	{ chars ++;
+		 	printf("%s : ARITHMETICOPERATOR\n", yytext);
+			yylval.string = strdup(yytext);
+			return ARITHMETIC_OPERATOR;
+			}
+
 "&&"		{chars += strlen(yytext);printf("%s : LOGICOPERATOR\n", yytext); return LOGIC_OPERATOR;}
 "||"		{chars += strlen(yytext); printf("%s : LOGICOPERATOR\n", yytext); return LOGIC_OPERATOR;}
 "!"		{chars += strlen(yytext); printf("%s : LOGICOPERATOR\n", yytext); return LOGIC_OPERATOR;}
@@ -116,12 +113,6 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 "-="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
 "*="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
 "/="        { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return ASSIGNMENT_OPERATOR; }
-
-"+"         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return PLUS; }
-"-"         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return MINUS; }
-"*"         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return MULTIPLICATION;}
-"/"         { chars += strlen(yytext); printf("%s : ASSIGNMENT_OPERATOR\n", yytext); yylval.string = strdup(yytext); return DIVISION; }
-
 
 
 "<="        { chars += strlen(yytext); printf("%s : RELATIONAL_OPERATOR\n", yytext); return RELATIONAL_OPERATOR; }
@@ -141,8 +132,6 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 "]"         { chars++; printf("%s : RBRACKET\n", yytext); return RBRACKET; }
 "{"         { chars++; printf("%s : LECURL\n", yytext); return LCURL; }
 "}"         { chars++; printf("%s : RCURL\n", yytext); return RCURL; }
-"_"			{ chars++; printf("%s : UNDERSCORE\n", yytext); return UNDERSCORE; }
-"."			{ chars++; printf("%s : PERIOD\n", yytext); return DOT; }
 
 
 [\r\n]+	{lines++; chars=0;}

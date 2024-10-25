@@ -26,8 +26,8 @@ extern TAC* tacHead; // Global head of the TAC instructions list
 extern char* currentID;
 
 int allocateNextAvailableTempVar(int tempVars[]);
-void semanticAnalysis(ASTNode* node, SymbolTable* symTab);
-TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table); //returns the TAC for the expression to print on console
+void semanticAnalysis(ASTNode* node, OuterSymbolTable* symTab);
+TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table); //returns the TAC for the expression to print on console
 char* createTempVar();
 //char* createOperand(ASTNode* node);
 char* createOperand(ASTNode* node, SymbolTable* symbol_table);
@@ -43,4 +43,6 @@ TAC* generateTACForSimpleExpr(ASTNode* expr, SymbolTable* symbol_table);
 //Trying TempVar Map
 void addTempVarMapping(char* key, char* tempVar);
 char* findTempVar(char* key);
+
+void def_outer_table_semantic(OuterSymbolTable* outer_table);
 #endif // SEMANTIC_H

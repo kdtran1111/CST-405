@@ -12,13 +12,13 @@ extern int yyparse();
 extern FILE* yyin;
 extern int lines;
 extern TAC* tacHead;  //Declared the head of the Linkedlist of TAC entries
-OuterSymbolTable* outer_table;
+OuterSymbolTable* outer_table; //name of the big table
 char* current_scope = "global";
 SymbolTable* current_table;
 ASTNode* root;
 
 void yyerror(const char* s) {
-    fprintf(stderr, "Parse error: %s\n", s);
+    fprintf(stderr, "Parse error: %s\n at line %s\n", s, lines);
     fflush(stderr); // Flush stderr to ensure error messages are printed
     exit(1);
 }
@@ -29,18 +29,14 @@ void yyerror(const char* s) {
     char* string;
     struct ASTNode* ast;
     int intval;
-    float floatval;
 }
 
 /* Define token types */
 %token <string> KEYWORD
-%token <char> UNDERSCORE
-%token <char> DOT
-%token <string> STRUCT
 %token <string> TYPE
 %token <string> ARR
 %token <intval> INT
-%token <floatval> FLOAT
+%token <int> FLOAT
 %token <string> STRING
 %token <char> CHAR
 %token <string> ARITHMETIC_OPERATOR
@@ -61,29 +57,19 @@ void yyerror(const char* s) {
 %token <string> FUNC
 %token <string> ID
 %token <string> WRITE
-%token <char> PLUS
-%token <char> MINUS
-%token <char> MULTIPLICATION
-%token <char> DIVISION 
-/* Define order of operations */
-%left PLUS MINUS
-%left MULTIPLICATION DIVISION
-%nonassoc LPAR RPAR
-
 %printer { fprintf(yyoutput, "%s", $$); } ID;
-%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val StructDeclList StructDecl
+%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty
 %%
 
 program:
-    StructDeclList FuncDeclList VarDeclList StmntList
+    VarDeclList FuncDeclList StmntList
     {
         printf("The PARSER has started\n");
         root = malloc(sizeof(ASTNode));
 		root->type = NodeType_program;
-        root->program.StructDeclList = $1;
-		root->program.VarDeclList = $2;
-        root->program.FuncDeclList = $3;
-		root->program.StmntList = $4;
+		root->program.VarDeclList = $1;
+        root->program.FuncDeclList = $2;
+		root->program.StmntList = $3;
     }
      |
     StmntList
@@ -93,42 +79,10 @@ program:
         root->type = NodeType_program;
         root->program.StmntList = $1;
     }
+    ;
+    ;
 
-;
-
-StructDeclList:
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_StructDeclList;
-        $$->StructDeclList.StructDecl = NULL;
-        $$->StructDeclList.StructDeclList = NULL;
-    }
-    |
-    StructDecl StructDeclList
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_StructDeclList;
-        $$->StructDeclList.StructDecl = $1;
-        $$->StructDeclList.StructDeclList = $2;
-    }
-
-StructDecl:
-    STRUCT ID {insert_struct(outer_table, $2, 5); current_scope = $2;} LCURL VarDeclList RCURL
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_StructDecl;
-        $$->StructDecl.id = strdup($2);
-        $$->StructDecl.VarDeclList = $5;
-        current_scope = "global";
-        printf("PARSER: recognized struct declaration\n");
-    }
-
-VarDeclList:
-    {$$ = malloc(sizeof(ASTNode));
-		$$->type = NodeType_VarDeclList;
-		$$->VarDeclList.VarDecl = NULL;
-		$$->VarDeclList.VarDeclList = NULL;
-    }
+VarDeclList:{/* empty/do nothing */}
     |
     VarDecl VarDeclList
     {
@@ -141,34 +95,26 @@ VarDeclList:
     ;
 
 VarDecl:
-    ARR TYPE ID LBRACKET INT RBRACKET SEMICOLON
+    ARR TYPE ID LBRACKET INT RBRACKET SEMICOLON //Array
     {
         printf("PARSER: Recognized %s array declaration: %s\n", $2, $3);
 
         if (lookup_symbol(get_symbol_table(outer_table, current_scope), $2) == 0)
         {
-            $$ = malloc(sizeof(ASTNode));
-			$$->type = NodeType_VarDecl;
-			$$->VarDecl.id = strdup($2);
-            $$->VarDecl.size = $5;
-            print_table(outer_table);
-
+            
             if (strcmp($2, "int") == 0)
             {
                 insert_int_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
-                $$->VarDecl.type = strdup("int_arr");
             }
 
             else if (strcmp($2, "float") == 0)
             {
                 insert_int_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
-                $$->VarDecl.type = strdup("float_arr");
             }
             
             else if (strcmp($2, "string") == 0)
             {
                 insert_int_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
-                $$->VarDecl.type = strdup("string_arr");
             }
 
             
@@ -179,7 +125,7 @@ VarDecl:
 
             exit(0);
         }
-        
+
     }
     |
     TYPE ID SEMICOLON
@@ -204,12 +150,12 @@ VarDecl:
                 insert_string_symbol(get_symbol_table(outer_table, current_scope), $2, "NULL");
             }
 
-            $$ = malloc(sizeof(ASTNode));
-			$$->type = NodeType_VarDecl;
-			$$->VarDecl.type = strdup($1);
-			$$->VarDecl.id = strdup($2);
-            $$->VarDecl.size = 0;
-            print_table(outer_table);
+             $$ = malloc(sizeof(ASTNode));
+			 $$->type = NodeType_VarDecl;
+			 $$->VarDecl.type = strdup($1);
+			 $$->VarDecl.id = strdup($2);
+
+             print_table(outer_table);
             
         }
         else
@@ -218,39 +164,7 @@ VarDecl:
 
             exit(0);
         }
-    }
-    |
-    UNDERSCORE ID ID SEMICOLON
-    {
-        if (lookup_scope(outer_table, $2) == 0)
-        {
-            printf("ERROR: Cannot find namespace %s\n", $2);
-            exit(1);
-        }
-
-        else if (strcmp(get_scope_type(outer_table, $2), "STRUCT") != 0)
-        {
-            printf("ERROR: %s is not of type struct", $2);
-            exit(1);
-        }
-
-        else if (lookup_symbol(get_symbol_table(outer_table, current_scope), $3) == 1)
-        {
-            printf("ERROR: variable %s has already been declared", $3);
-            exit(1);
-        }
-
-        else
-        {
-            $$ = malloc(sizeof(ASTNode));
-            $$->type = NodeType_VarDecl;
-            $$->VarDecl.type = strdup($2);
-			$$->VarDecl.id = strdup($3);
-            $$->VarDecl.size = 0;
-
-            insert_struct_symbol(get_symbol_table(outer_table, current_scope), $3, get_symbol_table(outer_table, $2), $2);
-            printf("PARSER: recognized struct creation\n");
-        }
+        
     }
     |
     TYPE ID
@@ -263,13 +177,7 @@ VarDecl:
         fprintf(stderr, "PARSER_ERROR: Invalid Identifier Name %d\n", lines);
     }
 
-FuncDeclList: 
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_FuncDeclList;
-		$$->FuncDeclList.FuncDecl = NULL;
-		$$->FuncDeclList.FuncDeclList = NULL;
-    }
+FuncDeclList: {/* empty/do noting*/}
     |
     FuncDecl FuncDeclList
     {
@@ -472,11 +380,6 @@ Stmnt:
         if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 1)
         {
             printf("PARSER: Recognized array index assignment\n");
-            $$ = malloc (sizeof(ASTNode));
-            $$->type = NodeType_IndexAssignment;
-            $$->IndexAssignment.id = $1;
-            $$->IndexAssignment.index = $3;
-            $$->IndexAssignment.Expr = $6;
         }
 
         else
@@ -491,11 +394,6 @@ Stmnt:
 
         if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 1)
         {
-            $$ = malloc (sizeof(ASTNode));
-            $$->type = NodeType_ArrAssignment;
-            $$->ArrAssignment.id = strdup($1);
-            $$->ArrAssignment.ValueList = $6;
-
             printf("PARSER: Recognized array assignment\n");
         }
 
@@ -508,7 +406,27 @@ Stmnt:
     |
     ID LPAR ValueList RPAR SEMICOLON
     {
-        if (lookup_scope(outer_table, $1) == 0)
+        if (lookup_scope(outer_table, $1) == 1)
+        {
+            printf("PARSER: Recognized function call\n");
+        }
+
+        else
+        {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
+    }
+    |
+    ID ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
+    {
+        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 0)
+        {
+            printf("ERROR: Used undeclared variable at line %d\n", lines);
+            exit(1);
+        }
+
+        else if (lookup_scope(outer_table, $3) == 0)
         {
             printf("ERROR: Call to undefined function at line %d\n", lines);
             exit(1);
@@ -516,34 +434,9 @@ Stmnt:
 
         else
         {
-            $$ = malloc(sizeof(ASTNode));
-            $$->type = NodeType_FunctionCall;
-            $$->FunctionCall.id = $1;
-            $$->FunctionCall.valueList = $3;
-            printf("PARSER: Recognized function call\n");
+            printf("PARSER: Recognized variable assignment to function call\n");
         }
     }
-    // |
-    // ID ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
-    // {
-    //     if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 0)
-    //     {
-    //         printf("ERROR: Used undeclared variable at line %d\n", lines);
-    //         exit(1);
-    //     }
-
-    //     else if (lookup_scope(outer_table, $3) == 0)
-    //     {
-    //         printf("ERROR: Call to undefined function at line %d\n", lines);
-    //         exit(1);
-    //     }
-
-    //     else
-    //     {
-    //         malloc
-    //         printf("PARSER: Recognized variable assignment to function call\n");
-    //     }
-    // }
     |
     ID LBRACKET INT RBRACKET ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
     {
@@ -570,162 +463,44 @@ Stmnt:
     {
         printf("PARSER: Recognized type cast to %s\n", $4);
     }
-    |
-    ID DOT ID ASSIGNMENT_OPERATOR Expr SEMICOLON
-    {
-        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 0)
-        {
-            printf("ERROR: ID %s was not declared in this scope\n", $1);
-            exit(1);
-        }
-        else if (lookup_struct_variable(get_symbol_table(outer_table, current_scope), $1, $3) == 0)
-        {
-            printf("ERROR: Struct has no member %s \n", $3);
-            exit(1);
-        }
-        
-
-        else
-        {
-            $$ = malloc(sizeof(ASTNode));
-            $$->type = NodeType_StructMemberAssignment;
-            $$->StructMemberAssignment.id = $1;
-            $$->StructMemberAssignment.member_id = $3;
-            $$->StructMemberAssignment.Expr = $5;
-            printf("PARSER: Recognized struct member assignment\n");
-        }
-    }
 
 
 ValueList:
+    |
     Val
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_ValueList;
-        $$->ValueList.Val = $1;
-        $$->ValueList.ValueList = NULL;
-    }
     |
     Val COMMA ValueListNonEmpty
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_ValueList;
-        $$->ValueList.Val = $1;
-        $$->ValueList.ValueList = $3;
-    }
 
 ValueListNonEmpty:
     Val
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_ValueList;
-        $$->ValueList.Val = $1;
-        $$->ValueList.ValueList = NULL;
-    }
     |
     Val COMMA ValueListNonEmpty
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_ValueList;
-        $$->ValueList.Val = $1;
-        $$->ValueList.ValueList = $3;
-    }
 
 Val:
     ID
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_SimpleID;
-        $$->SimpleID.id = strdup($1);
-    }
     |
     INT
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_SimpleExpr;
-        $$->SimpleExpr.value = $1;
-    }
-    |
-    FLOAT
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_SimpleFloat;
-        $$->SimpleFloat.value = $1;
-    }
-    |
-    STRING
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_SimpleString;
-        $$->SimpleString.value = strdup($1);
-    }
 
 
-Expr: Expr ARITHMETIC_OPERATOR Expr Expr:
-    Expr PLUS Expr {
-        printf("PARSER: Recognized addition\n");
-        $$ = malloc(sizeof(ASTNode));
-        if ($$ == NULL) {
-            fprintf(stderr, "Memory allocation failed\n");
-            exit(1);
-        }
-        $$->type = NodeType_Expr;
-        $$->Expr.left = $1;
-        $$->Expr.right = $3;
-        $$->Expr.op = strdup("+");
-        if ($$->Expr.op == NULL) {
-            fprintf(stderr, "Memory allocation for operator failed\n");
-            exit(1);
-        }
-    }
-    | Expr MINUS Expr {
-        printf("PARSER: Recognized subtraction\n");
-        $$ = malloc(sizeof(ASTNode));
-        if ($$ == NULL) {
-            fprintf(stderr, "Memory allocation failed\n");
-            exit(1);
-        }
-        $$->type = NodeType_Expr;
-        $$->Expr.left = $1;
-        $$->Expr.right = $3;
-        $$->Expr.op = strdup("-");
-        if ($$->Expr.op == NULL) {
-            fprintf(stderr, "Memory allocation for operator failed\n");
-            exit(1);
-        }
-    }
-    | Expr MULTIPLICATION Expr {
-        printf("PARSER: Recognized multiplication\n");
-        $$ = malloc(sizeof(ASTNode));
-        if ($$ == NULL) {
-            fprintf(stderr, "Memory allocation failed\n");
-            exit(1);
-        }
-        $$->type = NodeType_Expr;
-        $$->Expr.left = $1;
-        $$->Expr.right = $3;
-        $$->Expr.op = strdup("*");
-        if ($$->Expr.op == NULL) {
-            fprintf(stderr, "Memory allocation for operator failed\n");
-            exit(1);
-        }
-    }
-    | Expr DIVISION Expr {
-        printf("PARSER: Recognized division\n");
-        $$ = malloc(sizeof(ASTNode));
-        if ($$ == NULL) {
-            fprintf(stderr, "Memory allocation failed\n");
-            exit(1);
-        }
-        $$->type = NodeType_Expr;
-        $$->Expr.left = $1;
-        $$->Expr.right = $3;
-        $$->Expr.op = strdup("/");
-        if ($$->Expr.op == NULL) {
-            fprintf(stderr, "Memory allocation for operator failed\n");
-            exit(1);
-        }
-    }
+Expr: Expr ARITHMETIC_OPERATOR Expr { printf("PARSER: Recognized expression\n");
+                        
+						$$ = malloc(sizeof(ASTNode));
+                         if ($$ == NULL) {
+                        fprintf(stderr, "Memory allocation failed\n");
+                        exit(1);  // Ensure proper exit if malloc fails
+                        }
+						$$->type = NodeType_Expr;
+						$$->Expr.left = $1;
+						$$->Expr.right = $3;
+						$$->Expr.op = strdup($2);
+
+                        if ($$->Expr.op == NULL) {
+                        fprintf(stderr, "Memory allocation for operator failed\n");
+                        exit(1);
+                        }
+						
+						// Set other fields as necessary
+					  }
  					
 	| ID { printf("ASSIGNMENT statement \n"); 
 			$$ = malloc(sizeof(ASTNode));
@@ -737,88 +512,16 @@ Expr: Expr ARITHMETIC_OPERATOR Expr Expr:
     {
         printf("PARSER: Recognized integer expression: %d\n", $1);
         
+        print_table(outer_table);
         $$ = malloc(sizeof(ASTNode));
+        /*if ($$->Expr.op == NULL) {
+        fprintf(stderr, "Memory allocation for variable initialization failed\n");
+        exit(1);
+        }
+        */
         $$->type = NodeType_SimpleExpr;
         $$->SimpleExpr.value = $1;
         
-    }
-    | LPAR Expr RPAR
-    {
-        $$ = $2;
-    }
-    | FLOAT
-    {
-        printf("PARSER: Recognized float expression: %f\n", $1);
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_SimpleFloat;
-        $$->SimpleFloat.value = $1;
-    }
-    |
-    ID LBRACKET INT RBRACKET
-    {
-        printf("PARSER: Recognized array index expression: %s[$d]\n", $1, $3);
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_SimpleArrIndex;
-        $$->SimpleArrIndex.index = $3;
-        $$->SimpleArrIndex.id = strdup($1);
-    }
-    |
-    ID DOT ID
-    {
-
-        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 0)
-        {
-            printf("ERROR: ID %s was not declared in this scope\n", $1);
-            exit(1);
-        }
-        else if (lookup_struct_variable(get_symbol_table(outer_table, current_scope), $1, $3) == 0)
-        {
-            printf("ERROR: Struct has no member %s \n", $3);
-            exit(1);
-        }
-        
-
-        else
-        {
-            printf("PARSER: Recognized Struct Member expression\n");
-            $$ = malloc(sizeof(ASTNode));
-            $$->type = NodeType_SimpleStructMember;
-            $$->SimpleStructMember.id = $1;
-            $$->SimpleStructMember.member_id = $3;
-        }
-    }
-    |
-    ID LPAR ValueList RPAR
-    {
-        if (lookup_scope(outer_table, $1) == 0)
-        {
-            printf("ERROR: Call to undefined function at line %d\n", lines);
-            exit(1);
-        }
-
-        else if(strcmp(get_scope_type(outer_table, $1), "void") == 0)
-        {
-            printf("ERROR: Function %s does not return a value\n", $1);
-            exit(1);
-        }
-
-        else
-        {
-            $$ = malloc(sizeof(ASTNode));
-            $$->type = NodeType_FunctionCall;
-            $$->FunctionCall.id = $1;
-            $$->FunctionCall.valueList = $3;
-            printf("PARSER: Recognized function call\n");
-        }
-    }
-    |
-    LPAR TYPE RPAR ID
-    {
-        $$ = malloc(sizeof(ASTNode));
-        $$->type = NodeType_TypeCast;
-        $$->TypeCast.type = $2;
-        $$->TypeCast.id = $4;
-        printf("PARSERL Recognized type cast");
     }
 ;
 
@@ -826,6 +529,7 @@ Expr: Expr ARITHMETIC_OPERATOR Expr Expr:
 
 int main() {
     outer_table = create_outer_table(10);
+    def_outer_table_semantic(outer_table);
     insert_scope(outer_table, current_scope, 10, "void");
     current_table = malloc(sizeof(SymbolTable));
     
@@ -850,10 +554,23 @@ int main() {
     }
 
     print_ast(root, 0);
+
+    //semantic and genrate TAC function called
+    printf("---Semantic Analysis---\n");
+    semanticAnalysis(root,outer_table);
+    print_table(outer_table);
+    printf("Writing TAC into TAC.ir\n");
+    printTACToFile("TAC.ir", tacHead);
+    if (tacHead == NULL) {
+    printf("Error: TAC head is NULL. No instructions to write.\n");
+    }else {
+
+    printf("Writing TAC into TAC.ir successful\n");
+    }
+
     //Freeing the tree
     fclose(yyin);
     //print_table(outer_table);
-
 
     
     return 0;

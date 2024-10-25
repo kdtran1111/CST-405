@@ -109,4 +109,3 @@ SymbolTable* deep_copy_symbol_table(SymbolTable* original);
 void freeSymbolTable(SymbolTable* table);
 #endif // SYMBOL_TABLE_H
 
-
