@@ -75,6 +75,7 @@ typedef struct ASTNode
         {   
             char* id;
             char* op;
+            char* expectedType;
             struct ASTNode* Expr; //was expression
             
         }Stmnt;

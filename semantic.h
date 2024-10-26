@@ -51,6 +51,7 @@ void check_array_declaration(SymbolTable* table, const char* type, const char* i
 //Trying TempVar Map
 void addTempVarMapping(char* key, char* tempVar);
 char* findTempVar(char* key);
-
+//Function for type coercion
+void apply_type_coercion(SymbolTable* symbol_table, const char* id, ASTNode* expr, int line);
 void def_outer_table_semantic(OuterSymbolTable* outer_table);
 #endif // SEMANTIC_H

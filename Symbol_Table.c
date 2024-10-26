@@ -550,7 +550,10 @@ Symbol* getSymbol(SymbolTable* table, const char* key) {
     }
     return NULL;  // Return NULL if the symbol is not found
 }
-
+char* getSymbolType(Symbol* symbol){
+    
+    return symbol->type_str;
+    }
 
 void updateRegister(SymbolTable* table, const char* key, char* registerName) {
     Symbol* symbol = getSymbol(table, key);
@@ -619,21 +622,42 @@ char* getTempVar(Symbol* symbol) {
 
 // New function to update the value of a symbol. Not yet needed. Will eventually be add into effect
 //Trying new updateValue with TempVar
-void updateValueInt(SymbolTable* table, const char* key, int new_value) {
+void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type) {
     Symbol* symbol = getSymbol(table, key);
-    if (symbol != NULL ) {
-        symbol->value.intValue = new_value;
-        //print_table(table);
-       /*
-       No need to update tempVar since it's still be in the same register with the declaration of the variable
-       */
-        // If this is the first time assigning a value, create a temp variable
+    if (symbol != NULL) {
+        /*
+        // Check and update based on variable type
+        if (type == TYPE_INT && symbol->type == TYPE_INT) {
+            symbol->value.intValue = new_value.intValue;
+            printf("Updated INT value of %s to %d\n", key, new_value.intValue);
+        } else if (type == TYPE_FLOAT && symbol->type == TYPE_FLOAT) {
+            symbol->value.floatValue = new_value.floatValue;
+            printf("Updated FLOAT value of %s to %.2f\n", key, new_value.floatValue);
+        } else {
+            printf("ERROR: Type mismatch for symbol %s. Expected %s but got %s\n",
+                   key, (symbol->type == TYPE_INT) ? "INT" : "FLOAT",
+                   (type == TYPE_INT) ? "INT" : "FLOAT");
+            return;
+        }
+        */
+
+
+        fprintf(stdout, "Debug: Updating '%s' with type %s, current type %s\n", 
+                key, type == TYPE_FLOAT ? "FLOAT" : "INT", symbol->type == TYPE_FLOAT ? "FLOAT" : "INT");
+
+        if (type == TYPE_FLOAT) {
+            symbol->value.floatValue = new_value.floatValue;
+        } else {
+            symbol->value.intValue = new_value.intValue;
+        }
+
+        // Check if tempVar needs to be created
         if (symbol->tempVar == NULL) {
             symbol->tempVar = createTempVar();
-            printf("new temp var created in updateaValue():   %s\n", symbol->tempVar);
+            printf("new temp var created in updateValue(): %s\n", symbol->tempVar);
         }
-        
-        printf("Updated value of %s to %d with tempVar %s\n", key, new_value, symbol->tempVar);
+
+        printf("Updated value of %s with tempVar %s\n", key, symbol->tempVar);
     } else {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }

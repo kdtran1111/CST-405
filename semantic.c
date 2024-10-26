@@ -83,7 +83,7 @@ void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* 
     }
     
       //Check for String type
-    if (strcmp(symbol->type_str, "STRING")==0  && expr->type != NodeType_Expr && expr->type != NodeType_SimpleString) {
+    if (strcmp(symbol->type_str, "STRING")==0   && expr->type != NodeType_SimpleString) {
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
         semantic_error(error_message, lines);
@@ -126,6 +126,91 @@ void check_array_declaration(SymbolTable* table, const char* type, const char* i
     check_array_type(symbol->type_str, line);
     check_array_size(size, line);
 }
+//Function to do type coercion
+/*
+void apply_type_coercion(SymbolTable* symbol_table, const char* id, ASTNode* expr, int line) {
+    SymbolTable* symbolTable = get_symbol_table(outer_table, global_scope);
+    Symbol* symbol = getSymbol(symbolTable, id);
+
+    if (symbol == NULL) {
+        char error_message[256];
+        snprintf(error_message, sizeof(error_message), "Variable '%s' used before declaration", id);
+        semantic_error(error_message, line);
+        return;
+    }
+
+    printf("Debug: Applying coercion for variable '%s' of type %s with expr type %d\n", id, symbol->type_str, expr->type);
+
+    // Check for INT to FLOAT coercion
+    if (strcmp(symbol->type_str, "FLOAT") == 0 && expr->type == NodeType_SimpleExpr) {
+        printf("Coercing integer to float for variable '%s'\n", id);
+        // Apply coercion logic here, e.g., convert `expr->SimpleExpr.value` to float
+        expr->SimpleFloat.value = (float)expr->SimpleExpr.value;
+        expr->type = NodeType_SimpleFloat;
+        //printf("Current var type is %s \n ", );
+    }
+    // Check for FLOAT to INT coercion
+    else if (strcmp(symbol->type_str, "INT") == 0 && expr->type == NodeType_SimpleFloat) {
+        printf("Coercing float to integer for variable '%s'\n", id);
+        expr->SimpleExpr.value = (int)expr->SimpleFloat.value;
+        expr->type = NodeType_SimpleExpr;
+    }
+    // Check for other coercion cases as necessary
+    // Add more type coercion cases for STRING or arrays if needed
+    else {
+        char error_message[256];
+        snprintf(error_message, sizeof(error_message), "Type coercion failed: Variable '%s' is of incompatible type", id);
+        semantic_error(error_message, line);
+    }
+}
+
+*/
+
+void apply_type_coercion(SymbolTable* symbol_table, const char* id, ASTNode* expr, int line) {
+    SymbolTable* symbolTable = get_symbol_table(outer_table, global_scope);
+    Symbol* symbol = getSymbol(symbolTable, id);
+
+    if (symbol == NULL) {
+        char error_message[256];
+        snprintf(error_message, sizeof(error_message), "Variable '%s' used before declaration", id);
+        semantic_error(error_message, line);
+        return;
+    }
+
+    printf("Debug: Applying coercion for variable '%s' of type %s with expr type %d\n", 
+           id, symbol->type_str, expr->type);
+    printf("Before coercion check: symbol->type_str = %s, expr->type = %d\n", symbol->type_str, expr->type);
+    char* expectedType = expr->Stmnt.expectedType;
+    printf("======expected type====== %s\n", expectedType);
+    
+    if (strcmp(symbol->type_str, "FLOAT") == 0 && expr->type == NodeType_SimpleExpr) {
+        
+        
+        printf("Coercing integer to float for variable '%s'\n", id);
+        expr->SimpleFloat.value = (float)expr->SimpleExpr.value;
+        printf("===FLoat.value = %f===\n", expr->SimpleFloat.value);
+        expr->type = NodeType_SimpleFloat;
+         printf("===symbol ID: %s type_str = %s===symbol value %f====\n",id, symbol->type_str,symbol->value.floatValue);
+        expr->type = NodeType_SimpleFloat;
+        printf("After coercion check: symbol->type_str = %s, expr->type = %d\n", symbol->type_str, expr->type);
+    } 
+    else if (strcmp(symbol->type_str, "INT") == 0 && expr->type == NodeType_SimpleExpr) {
+        // This case should handle an integer directly
+        printf("No coercion needed for variable '%s', assigning value directly.\n", id);
+        expr->type = NodeType_SimpleExpr;  // Ensure the type is correctly set to SimpleExpr
+    } 
+    else if (strcmp(symbol->type_str, "INT") == 0 && expr->type == NodeType_SimpleFloat) {
+        printf("Coercing float to integer for variable '%s'\n", id);
+        expr->SimpleExpr.value = (int)expr->SimpleFloat.value;  // Actual conversion
+        expr->type = NodeType_SimpleExpr;  // Explicitly set type to int post-conversion
+    } 
+    else {
+        char error_message[256];
+        snprintf(error_message, sizeof(error_message), "Type coercion failed: Variable '%s' is of incompatible type", id);
+        semantic_error(error_message, line);
+    }
+}
+
 // Recursive function for semantic analysis and TAC generation
 void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
     if (node == NULL) return;
@@ -160,27 +245,64 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
 
             // Check for type consistency and initialization
             check_type_consistency(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
+            apply_type_coercion(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
+            
           
-            if (symbol != NULL && node->Stmnt.Expr->type == NodeType_SimpleExpr) {
-                TAC* newTac = (TAC*)malloc(sizeof(TAC));
-            // Assuming the expression has an integer literal, update the variable's value
-
-            updateValueInt(symbol_Table, node->Stmnt.id, node->Stmnt.Expr->SimpleExpr.value);
-            fprintf(stdout,"updateValue has no problem\n");
            
-            fprintf(stdout,"Generating TAC for simple expression\n");
+             // Update variable value if the expression has a simple value
+        if (symbol != NULL && (node->Stmnt.Expr->type == NodeType_SimpleExpr || node->Stmnt.Expr->type == NodeType_SimpleFloat)) {
+            TAC* newTac = (TAC*)malloc(sizeof(TAC));
+
+            // Prepare the new value based on the type
+            VarValue newValue;
+            VarType varType;
             char buffer[20];
-            //char* tempVar= getTempVar(symbol_table,expr->Stmnt.id);
-            snprintf(buffer, 20, "%d", node->Stmnt.Expr->SimpleExpr.value);
+            /*
+            if (node->type == NodeType_SimpleFloat){
+                varType= TYPE_FLOAT;
+            } else if(node->type == NodeType_SimpleExpr){
+                varType= TYPE_INT;
+            }
+
+            if(varType == TYPE_FLOAT){
+                symbol->value.floatValue = node->SimpleFloat.value;
+            }else if(varType == TYPE_INT){
+                symbol->value.floatValue = node->SimpleExpr.value;
+            }
+            */
+            if (node->Stmnt.Expr->type == NodeType_SimpleFloat) {
+            varType = TYPE_FLOAT;
+            printf("DEBUG: Node type is SimpleFloat. Value: %f\n", node->Stmnt.Expr->SimpleFloat.value);
+            } else if (node->Stmnt.Expr->type == NodeType_SimpleExpr) {
+                varType = TYPE_INT;
+                printf("DEBUG: Node type is SimpleExpr. Value: %d\n", node->SimpleExpr.value);
+            } else {
+                printf("DEBUG: Node type is unrecognized: %d\n", node->Stmnt.Expr->type); // Add this to catch unexpected types
+            }
+        //expr->SimpleExpr.value
+            if (varType == TYPE_FLOAT) {
+                printf("DEBUG: Assigning float value: %f to symbol '%s'\n", node->Stmnt.Expr->SimpleFloat.value, symbol->id);
+                newValue.floatValue = node->Stmnt.Expr->SimpleFloat.value;
+            } else if (varType == TYPE_INT) {
+                printf("DEBUG: Assigning int value: %d to symbol '%s'\n", node->SimpleExpr.value, symbol->id);
+                newValue.intValue = node->Stmnt.Expr->SimpleExpr.value; // Consider casting to float
+            }
+
+            // Call the new updateValue function
+            updateValue(symbol_Table, currentID, newValue, varType);
+            fprintf(stdout, "updateValue has no problem\n");
+
+            fprintf(stdout, "Generating TAC for simple expression\n");
+
+            // Generate TAC
             newTac->arg1 = strdup(buffer);  // Literal value
-            newTac->op = "=";  // Assignment operator
+            newTac->op = "=";               // Assignment operator
             newTac->arg2 = NULL;
             newTac->result = getTempVar(symbol);
-            appendTAC(&tacHead,newTac);
+            appendTAC(&tacHead, newTac);
 
-            //newTac->result=createTempVar();
-            fprintf(stdout,"Generated in generateTAC in simpleExpr\n");
-            }
+            fprintf(stdout, "Generated in generateTAC in simpleExpr\n");
+        }
             break;
         case NodeType_Expr:
             // Recursively analyze left and right expressions

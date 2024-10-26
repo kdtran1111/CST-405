@@ -453,6 +453,16 @@ Stmnt:
 		$$->Stmnt.id = strdup($1);
 		$$->Stmnt.op = strdup($2);
 		$$->Stmnt.Expr = $3;
+        // Lookup the variable type from the symbol table
+        Symbol* symbol = getSymbol(get_symbol_table(outer_table, current_scope), $1);
+        if (symbol) {
+            $$->Stmnt.expectedType = strdup(getSymbolType(symbol)); // Store the expected type in the ASTNode
+            printf("Expected type is: %s\n",getSymbolType(symbol) );
+
+        } else {
+            fprintf(stderr, "ERROR: Variable '%s' undeclared\n", $1);
+            exit(1);
+        }
         printf("PARSER Recognized Assignment Statement\n");
         
     }
@@ -847,9 +857,10 @@ int main() {
     //semantic and genrate TAC function called
     printf("---Semantic Analysis---\n");
     semanticAnalysis(root,outer_table);
-    print_table(outer_table);
+    //print_table(outer_table);
     printf("----Printing TAC----\n");
     printTAC(tacHead);
+    print_table(outer_table);
     printf("Writing TAC into TAC.ir\n");
     printTACToFile("TAC.ir", tacHead);
     if (tacHead == NULL) {
