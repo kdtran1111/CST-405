@@ -256,7 +256,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
             // Prepare the new value based on the type
             VarValue newValue;
             VarType varType;
-            char buffer[20];
+            
             /*
             if (node->type == NodeType_SimpleFloat){
                 varType= TYPE_FLOAT;
@@ -270,6 +270,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
                 symbol->value.floatValue = node->SimpleExpr.value;
             }
             */
+            char buffer[20];
             if (node->Stmnt.Expr->type == NodeType_SimpleFloat) {
             varType = TYPE_FLOAT;
             printf("DEBUG: Node type is SimpleFloat. Value: %f\n", node->Stmnt.Expr->SimpleFloat.value);
@@ -290,11 +291,14 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
 
             // Call the new updateValue function
             updateValue(symbol_Table, currentID, newValue, varType);
-            fprintf(stdout, "updateValue has no problem\n");
-
-            fprintf(stdout, "Generating TAC for simple expression\n");
-
+            fprintf(stdout, "updateValue has no problem\n");  
+            fprintf(stdout, "Generating TAC for simple expression\n");                
             // Generate TAC
+            if (varType == TYPE_FLOAT) {
+                snprintf(buffer, 20, "%f", newValue.floatValue);
+            }else if (varType == TYPE_INT) {
+                snprintf(buffer, 20, "%d", newValue.intValue);
+            }
             newTac->arg1 = strdup(buffer);  // Literal value
             newTac->op = "=";               // Assignment operator
             newTac->arg2 = NULL;
