@@ -1,4 +1,2 @@
-arr int test[5];
-
-
-c=10;
+string c;
+c="10";

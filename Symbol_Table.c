@@ -423,7 +423,7 @@ void print_string_array(char** arr, int size) {
 void print_symbol_table(SymbolTable* table, int indent) {
     for (int i = 0; i < table->size; i++) {
         SymbolNode* current = table->table[i];
-
+       
         while (current != NULL) {
             // Print indent level
             for (int j = 0; j < indent; j++) printf(" ");
@@ -467,6 +467,7 @@ void print_table(OuterSymbolTable* outerTable) {
         while (currentScope != NULL) {
             printf("\nScope: %s, Type: %s\n", currentScope->key, currentScope->return_type);
             if (currentScope->scopeTable != NULL) {
+             
                 print_symbol_table(currentScope->scopeTable, 4);  // Print the associated symbol table
             } else {
                 printf("    (No symbols in this scope)\n");

@@ -81,8 +81,8 @@ program:
         root = malloc(sizeof(ASTNode));
 		root->type = NodeType_program;
         root->program.StructDeclList = $1;
-		root->program.VarDeclList = $2;
-        root->program.FuncDeclList = $3;
+		root->program.VarDeclList = $3;
+        root->program.FuncDeclList = $2;
 		root->program.StmntList = $4;
     }
      |
@@ -123,12 +123,14 @@ StructDecl:
         printf("PARSER: recognized struct declaration\n");
     }
 
-VarDeclList:
+VarDeclList: 
+    
     {$$ = malloc(sizeof(ASTNode));
 		$$->type = NodeType_VarDeclList;
 		$$->VarDeclList.VarDecl = NULL;
 		$$->VarDeclList.VarDeclList = NULL;
     }
+    
     |
     VarDecl VarDeclList
     {
@@ -145,7 +147,7 @@ VarDecl:
     {
         printf("PARSER: Recognized %s array declaration: %s\n", $2, $3);
 
-        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $2) == 0)
+        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $3) == 0)
         {
             $$ = malloc(sizeof(ASTNode));
 			$$->type = NodeType_VarDecl;
@@ -176,7 +178,7 @@ VarDecl:
         }
         else
         {
-            printf("ERROR ON LINE %d: ID %s has already been defined\n", lines, $2);
+            printf("ERROR ON LINE %d: Array with ID '%s' has already been defined\n", lines, $3);
 
             exit(0);
         }
@@ -458,6 +460,7 @@ Stmnt:
     ID ASSIGNMENT_OPERATOR Expr
     {
         fprintf(stderr, "PARSER_ERROR: Missing Semicolon at line %d\n", lines);
+        exit(1);
     }
     |
     WRITE ID SEMICOLON {
@@ -732,6 +735,14 @@ Expr:
         $$ = malloc(sizeof(ASTNode));
         $$->type = NodeType_SimpleFloat;
         $$->SimpleFloat.value = $1;
+    }
+    |
+    |STRING
+    {
+        printf("PARSER: Recognized string expression: %s\n", $1);
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_SimpleString;
+        $$->SimpleString.value = $1;
     }
     |
     ID LBRACKET INT RBRACKET

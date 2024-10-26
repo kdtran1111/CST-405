@@ -59,6 +59,7 @@ typedef struct ASTNode
 
         struct
         {
+            int declared; // 1 for yes, 0 for no
             char* type;
             int size;
             char* id;

@@ -42,8 +42,10 @@ TAC* generateTACForSimpleExpr(ASTNode* expr, SymbolTable* symbol_table);
 
 // Function prototypes for array declaration checks
 void check_array_not_redeclared(SymbolTable* table, const char* id, int line);
+
 void check_array_type(const char* type, int line);
 void check_array_size(int size, int line);
+//main function to combine all semantic check for array
 void check_array_declaration(SymbolTable* table, const char* type, const char* id, int size, int line);
 
 //Trying TempVar Map

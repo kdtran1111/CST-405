@@ -82,6 +82,14 @@ void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* 
         return;
     }
     
+      //Check for String type
+    if (strcmp(symbol->type_str, "STRING")==0  && expr->type != NodeType_Expr && expr->type != NodeType_SimpleString) {
+        char error_message[256];
+        snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
+        semantic_error(error_message, lines);
+        return;
+    }
+    
     // Add more type checks as necessary
 }
 // Check if the array is already declared in the symbol table
@@ -95,7 +103,7 @@ void check_array_not_redeclared(SymbolTable* table, const char* id, int line) {
 
 // Check if the array type is valid
 void check_array_type(const char* type, int line) {
-    if (strcmp(type, "int") != 0 && strcmp(type, "float") != 0 && strcmp(type, "string") != 0) {
+    if (strcmp(type, "INT_ARRAY") != 0 && strcmp(type, "FLOAT_ARRAY") != 0 && strcmp(type, "STRING_ARRAY") != 0) {
         char errorMsg[100];
         snprintf(errorMsg, sizeof(errorMsg), "Invalid array type '%s'. Allowed types are int, float, and string.", type);
         semantic_error(errorMsg, line);
@@ -113,48 +121,19 @@ void check_array_size(int size, int line) {
 
 // Main function to perform all semantic checks on an array declaration
 void check_array_declaration(SymbolTable* table, const char* type, const char* id, int size, int line) {
-    check_array_not_redeclared(table, id, line);
-    check_array_type(type, line);
+    Symbol* symbol =getSymbol(table,id);
+    //check_array_not_redeclared(table, id, line);
+    check_array_type(symbol->type_str, line);
     check_array_size(size, line);
 }
 // Recursive function for semantic analysis and TAC generation
 void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
     if (node == NULL) return;
     
-    printf("semanticAnalysis: Processing node of type %d\n", node->type);
+    //Debug: printf("semanticAnalysis: Processing node of type %d\n", node->type);
     SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
     switch (node->type) {
-        case NodeType_VarDecl:
-            semanticAnalysis(node->VarDecl.id, outer_table); 
-            //semanticAnalysis(node->Stmnt.Expr, outer_table); 
-             printf("Entering NodeType_VarDecl: %s\n", node->VarDecl.id);
-             printf("semanticAnalysis: Found VarDecl node for ID %s\n", node->VarDecl.id);
-            // If this is an array declaration, perform semantic checks
-            if (node->VarDecl.size > 0) {  // Assuming size > 0 indicates an array
-                printf("Semantic analysis for array declaration: %s\n", node->VarDecl.id);
-                check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
-                // ...
-            }
-            // Variable declaration
-             // If this is an array declaration, perform semantic checks
-            if (node->VarDecl.size > 0) {  // Assuming size > 0 indicates an array
-                printf("Semantic analysis for array declaration: %s\n", node->VarDecl.id);
-
-                // Perform array semantic checks
-                check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
-                /*
-                // After validation, insert the array symbol into the symbol table
-                if (strcmp(node->VarDecl.type, "int_arr") == 0) {
-                    insert_int_arr_symbol(symbol_Table, node->VarDecl.id, node->VarDecl.size);
-                } else if (strcmp(node->VarDecl.type, "float_arr") == 0) {
-                    insert_float_arr_symbol(symbol_Table, node->VarDecl.id, node->VarDecl.size);
-                } else if (strcmp(node->VarDecl.type, "string_arr") == 0) {
-                    insert_string_arr_symbol(symbol_Table, node->VarDecl.id, node->VarDecl.size);
-                }
-                */
-            }
-            break;
-
+        
         case NodeType_Stmnt:
             currentID  = node->Stmnt.id;
             if (currentID == NULL) {
@@ -254,20 +233,32 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
   
         case NodeType_program:
             /*
-            semanticAnalysis(node->program.VarDeclList, outer_table);
-            semanticAnalysis(node->program.StmntList, outer_table);
             */
+            printf("Traversing StructDeclList\n");
+            semanticAnalysis(node->program.StructDeclList, outer_table);
+            printf("Traversing FuncDeclList\n");
+            semanticAnalysis(node->program.FuncDeclList, outer_table);
             printf("Traversing VarDeclList in program\n");
             semanticAnalysis(node->program.VarDeclList, outer_table);
             printf("Traversing StmntList in program\n");
             semanticAnalysis(node->program.StmntList, outer_table);
+            
             break;
 
         case NodeType_VarDeclList:
-            semanticAnalysis(node->VarDeclList.VarDecl, outer_table);
+            /*semanticAnalysis(node->VarDeclList.VarDecl, outer_table);
             semanticAnalysis(node->VarDeclList.VarDeclList, outer_table);
             break;
-
+            
+            printf("Processing VarDeclList node\n");
+        
+                semanticAnalysis(node->VarDeclList.VarDecl, outer_table);  // Process the actual declaration
+                node = node->VarDeclList.VarDeclList;  // Move to the next VarDecl in the list
+        
+            break;
+            */
+            //printf("Traversing VarDeclList in program\n");
+            //semanticAnalysis(node->program.VarDeclList, outer_table);
         case NodeType_StmntList:
             semanticAnalysis(node->StmntList.Stmnt, outer_table);
             semanticAnalysis(node->StmntList.StmntList, outer_table);
@@ -321,6 +312,11 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
 
         case NodeType_IndexAssignment:
             // Array index assignment logic
+            // Perform array assignment semantic checks
+            check_array_declaration(symbol_Table, node->VarDecl.type, node->IndexAssignment.id, node->VarDecl.size, lines);
+                // Perform array semantic checks
+               // check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
+                
             break;
 
         case NodeType_ValueList:
@@ -353,6 +349,19 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
 
         case NodeType_TypeCast:
             // Type casting logic
+            break;
+        case NodeType_VarDecl:
+            
+             // If this is an array declaration, perform semantic checks
+            /*printf("Semantic analysis for array declaration: %s\n", node->VarDecl.id);
+            
+            if (node->VarDecl.declared==1){
+                check_array_not_redeclared(symbol_Table, node->VarDecl.id, lines);
+            }else{
+                printf("Array declared successful:\n");
+                node->VarDecl.declared=1;
+            }
+            */
             break;
 
         default:
@@ -410,7 +419,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             
             tempResult = (char*)newTac->result;  
             fprintf(stdout, "TempResult: %s\n", tempResult); //Debug
-            fprintf(stdout,"GEnerated in generateTAC\n");
+            fprintf(stdout,"Generated in generateTAC\n");
             newTac->next = NULL;
             //expr->Expr.check=1;
 
