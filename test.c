@@ -146,22 +146,22 @@ void apply_type_coercion(SymbolTable* symbol_table, const char* id, ASTNode* exp
         printf("Coercing integer to float for variable '%s'\n", id);
         expr->SimpleFloat.value = (float)expr->SimpleExpr.value;
         printf("===FLoat.value = %f===\n", expr->SimpleFloat.value);
-        //expr->type = NodeType_SimpleFloat;
+        expr->type = NodeType_SimpleFloat;
          printf("===symbol ID: %s type_str = %s===symbol value %f====\n",id, symbol->type_str,symbol->value.floatValue);
-        //expr->type = NodeType_SimpleFloat;
+        expr->type = NodeType_SimpleFloat;
         printf("After coercion check: symbol->type_str = %s, expr->type = %d\n", symbol->type_str, expr->type);
     } 
     else if (strcmp(symbol->type_str, "INT") == 0 && expr->type == NodeType_SimpleExpr){
         // This case should handle an integer directly
         printf("No coercion needed for variable '%s', assigning value directly.\n", id);
-        //expr->type = NodeType_SimpleExpr;  // Ensure the type is correctly set to SimpleExpr
+        expr->type = NodeType_SimpleExpr;  // Ensure the type is correctly set to SimpleExpr
     } 
     else if (strcmp(symbol->type_str, "INT") == 0 && (expr->type == NodeType_Expr | expr->type == NodeType_SimpleExpr)) {
         printf("Coercing float to integer for variable '%s'\n", id);
         expr->SimpleExpr.value = (int)expr->SimpleFloat.value;  // Actual conversion
-        //expr->type = NodeType_SimpleExpr;  // Explicitly set type to int post-conversion
+        expr->type = NodeType_SimpleExpr;  // Explicitly set type to int post-conversion
     } else if(strcmp(symbol->type_str, "STRING") == 0 && expr->type == NodeType_SimpleString){
-        //expr->type = NodeType_SimpleString; 
+        expr->type = NodeType_SimpleString; 
         symbol->type=  TYPE_STRING;  
         printf("After coercion check: symbol->type_str = %s, expr->type = %d symbol.type= %u\n", symbol->type_str, expr->type, symbol->type);
         
@@ -454,7 +454,6 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
     }
 
 }
-
 TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
     SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
     Symbol* symbol = getSymbol(symbol_Table, currentID);
@@ -473,26 +472,15 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             tempResult = createTempVar();
 
             newTac->result = strdup(tempResult);
-            //
+            updateRegister(symbol_Table, currentID, newTac->result);
             
             // Reuse temp vars for operands (x and y)
-            if (symbol->tempVar==NULL && symbol->tempVar!=tempResult){
             newTac->arg1 = createOperand(expr->Expr.left, symbol_Table);  // Left operand (e.g., t0 for x)
-            fprintf(stdout, "newTac->arg1 is:  %s\n", newTac->arg1);// DEbug
+           
             fprintf(stdout, "TempResult is: %s\n", tempResult);// DEbug
-            } else{
-                newTac->arg1 = strdup(symbol->tempVar);
-            }
             if (tempResult){
             //if(strcmp(newTac->result, tempResult) == 0){
-                if(expr->Expr.right != NULL && expr->Expr.right->type!=NodeType_Expr){
-                newTac->arg2 = createOperand(expr->Expr.right, symbol_Table); // Right operand (e.g., t1 for y)
-                fprintf(stdout, "newTac->arg2 is:  %s in if Expr.right!=NULL \n", newTac->arg2);// DEbug
-                } else {
-                newTac->arg2 = createOperand(expr->Expr.left, symbol_Table); 
-                fprintf(stdout, "newTac->arg2 is:  %s in the else \n", newTac->arg2);// DEbug  
-                }
-
+            newTac->arg2 = createOperand(expr->Expr.right, symbol_Table); // Right operand (e.g., t1 for y)
             } else if (strcmp(newTac->result, tempResult) >0){
             newTac->arg2=tempResult;
             fprintf(stdout,"tempResult is larger than result\n");
@@ -510,9 +498,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             newTac->next = NULL;
             //expr->Expr.check=1;
 
-            fprintf(stdout,"Generated TAC: %s = %s %s %s\n", tempResult //*newTac->result
-            , newTac->arg1, newTac->op, newTac->arg2);
-            updateRegister(symbol_Table, currentID, newTac->result);
+            fprintf(stdout,"Generated TAC: %s = %s %s %s\n", tempResult /*newTac->result*/, newTac->arg1, newTac->op, newTac->arg2);
             break;
         }
         case NodeType_SimpleExpr: {
@@ -529,10 +515,9 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
     return newTac;
 }
 
-
 char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
     char* operand = (char*)malloc(32 * sizeof(char));
-    
+
     switch (node->type) {
         case NodeType_SimpleID: {
             Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id); //------
@@ -553,10 +538,6 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
         case NodeType_SimpleExpr:
             snprintf(operand, 32, "%d", node->SimpleExpr.value);
             break;
-        case NodeType_SimpleFloat: { // New case for SimpleFloat
-            snprintf(operand, 32, "%f", node->SimpleFloat.value);
-            break;
-        }
         default:
             strcpy(operand, "");
             break;

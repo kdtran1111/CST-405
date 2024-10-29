@@ -625,30 +625,18 @@ char* getTempVar(Symbol* symbol) {
 void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type) {
     Symbol* symbol = getSymbol(table, key);
     if (symbol != NULL) {
-        /*
-        // Check and update based on variable type
-        if (type == TYPE_INT && symbol->type == TYPE_INT) {
-            symbol->value.intValue = new_value.intValue;
-            printf("Updated INT value of %s to %d\n", key, new_value.intValue);
-        } else if (type == TYPE_FLOAT && symbol->type == TYPE_FLOAT) {
-            symbol->value.floatValue = new_value.floatValue;
-            printf("Updated FLOAT value of %s to %.2f\n", key, new_value.floatValue);
-        } else {
-            printf("ERROR: Type mismatch for symbol %s. Expected %s but got %s\n",
-                   key, (symbol->type == TYPE_INT) ? "INT" : "FLOAT",
-                   (type == TYPE_INT) ? "INT" : "FLOAT");
-            return;
-        }
-        */
-
-
         fprintf(stdout, "Debug: Updating '%s' with type %s, current type %s\n", 
                 key, type == TYPE_FLOAT ? "FLOAT" : "INT", symbol->type == TYPE_FLOAT ? "FLOAT" : "INT");
 
         if (type == TYPE_FLOAT) {
             symbol->value.floatValue = new_value.floatValue;
-        } else {
+            printf("====Float Value==== %f\n",symbol->value.floatValue );
+        } else if(type == TYPE_INT){
             symbol->value.intValue = new_value.intValue;
+            printf("====Int Value==== %d\n",symbol->value.intValue );
+        }else if(type == TYPE_STRING){
+            symbol->value.stringValue = new_value.stringValue;
+            printf("====String Value==== %s\n",symbol->value.stringValue );
         }
 
         // Check if tempVar needs to be created
