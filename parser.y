@@ -93,6 +93,16 @@ program:
         root->type = NodeType_program;
         root->program.StmntList = $1;
     }
+    |
+    StructDeclList FuncDeclList VarDeclList 
+    {
+        printf("The PARSER has started\n");
+        root = malloc(sizeof(ASTNode));
+		root->type = NodeType_program;
+        root->program.StructDeclList = $1;
+		root->program.VarDeclList = $3;
+        root->program.FuncDeclList = $2;
+    }
 
 ;
 
@@ -164,13 +174,13 @@ VarDecl:
 
             else if (strcmp($2, "float") == 0)
             {
-                insert_int_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
+                insert_float_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
                 $$->VarDecl.type = strdup("float_arr");
             }
             
             else if (strcmp($2, "string") == 0)
             {
-                insert_int_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
+                insert_string_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
                 $$->VarDecl.type = strdup("string_arr");
             }
 
@@ -195,6 +205,7 @@ VarDecl:
             if (strcmp($1, "int") == 0)
             {
                 insert_int_symbol(get_symbol_table(outer_table, current_scope), $2, 0);
+                break;
             }
 
             else if (strcmp($1, "float") == 0)
@@ -317,10 +328,13 @@ ReturnStmnt:
     {
         if (strcmp(get_scope_type(outer_table, current_scope), "void") != 0)
         {
-
             printf("ERROR: function with return type has no return statement at line %d\n", lines); 
             exit(1);
         }
+
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ReturnStmnt;
+        $$->ReturnStmnt.id = NULL;
 
     }
     |
@@ -537,7 +551,26 @@ Stmnt:
             printf("PARSER: Recognized function call\n");
         }
     }
-   
+
+    |
+    ID LPAR RPAR SEMICOLON
+    {
+        if (lookup_scope(outer_table, $1) == 0)
+        {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
+
+        else
+        {
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_FunctionCall;
+            $$->FunctionCall.id = $1;
+            $$->FunctionCall.valueList = NULL;
+            printf("PARSER: Recognized function call\n");
+        }
+    }
+
     |
     ID LBRACKET INT RBRACKET ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
     {
@@ -813,6 +846,30 @@ Expr:
         }
     }
     |
+    ID LPAR RPAR
+    {
+         if (lookup_scope(outer_table, $1) == 0)
+        {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
+
+        else if(strcmp(get_scope_type(outer_table, $1), "void") == 0)
+        {
+            printf("ERROR: Function %s does not return a value\n", $1);
+            exit(1);
+        }
+
+        else
+        {
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_FunctionCall;
+            $$->FunctionCall.id = $1;
+            $$->FunctionCall.valueList = NULL;
+            printf("PARSER: Recognized function call\n");
+        }
+    }
+    |
     LPAR TYPE RPAR ID
     {
         $$ = malloc(sizeof(ASTNode));
@@ -857,10 +914,12 @@ int main() {
     //semantic and genrate TAC function called
     printf("---Semantic Analysis---\n");
     semanticAnalysis(root,outer_table);
+
     //print_table(outer_table);
     printf("----Printing TAC----\n");
     printTAC(tacHead);
     print_table(outer_table);
+
     printf("Writing TAC into TAC.ir\n");
     printTACToFile("TAC.ir", tacHead);
     if (tacHead == NULL) {
@@ -872,7 +931,7 @@ int main() {
     
     //Freeing the tree
     fclose(yyin);
-    //print_table(outer_table);
+    print_table(outer_table);
 
 
     
