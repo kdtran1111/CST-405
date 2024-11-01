@@ -1397,7 +1397,71 @@ void generate_array_assign_tac(ASTNode* node, SymbolTable* symbol_table)
 
     }
 }
-message.txt
+void printTACToFile(const char* filename, TAC* tac) {
+    fprintf(stdout,"--------------Printing TAC to file---------------\n");
+
+    FILE* file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+    int cntr = 0;
+    TAC* previous = NULL;
+    TAC* current = tac;
+    while (current != NULL) {
+
+        if (current->arg2!=NULL && current->arg1!=NULL) 
+        {
+
+            if (strcmp(current->arg1, "") == 0) 
+            {
+                current->arg1 = previous->result;    
+            }
+
+            fprintf(file, "%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
+            fprintf(stdout,"%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
+        }
+
+        //avoid printing NULL into the TAC when it's simpleExpr 
+        else if ( current->result!=NULL) {
+        
+        fprintf(file, "%s = %s\n", current->result, current->arg1);
+        fprintf(stdout,"%s = %s\n", current->result, current->arg1);
+        } 
+        
+        else if (strcmp(current->keyword, "write") == 0)
+        {
+        fprintf(file, "%s %s\n", current->keyword, current->arg1);
+        fprintf(stdout,"%s %s\n", current->keyword, current->arg1);
+        }
+
+        else if(strcmp(current->keyword, "jump") == 0)
+        {
+            fprintf(file, "%s %s\n", current->keyword, current->arg1);
+            fprintf(stdout,"%s %s\n", current->keyword, current->arg1);
+        }
+
+        else
+        {
+            fprintf(file, "\n%s:\n", current->keyword);
+            fprintf(stdout,"\n%s:\n", current->keyword);
+        }
+
+        if (cntr >= 1)
+        {
+            previous = current;
+            current = current->next;
+        }
+
+        else 
+        {
+            current = current->next; 
+        }
+        cntr++;
+    }
+
+    fclose(file);
+}
 
 // Create a temporary variable
 char* createTempVar() {
