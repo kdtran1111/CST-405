@@ -584,7 +584,7 @@ void print_array_linked_list(LinkedListNode* head) {
 void print_symbol_table(SymbolTable* table, int indent) {
     for (int i = 0; i < table->size; i++) {
         SymbolNode* current = table->table[i];
-
+       
         while (current != NULL) {
             // Print indent level
             for (int j = 0; j < indent; j++) printf(" ");
@@ -628,6 +628,7 @@ void print_table(OuterSymbolTable* outerTable) {
         while (currentScope != NULL) {
             printf("\nScope: %s, Type: %s\n", currentScope->key, currentScope->return_type);
             if (currentScope->scopeTable != NULL) {
+             
                 print_symbol_table(currentScope->scopeTable, 4);  // Print the associated symbol table
             } else {
                 printf("    (No symbols in this scope)\n");
@@ -831,7 +832,10 @@ Symbol* getSymbol(SymbolTable* table, const char* key) {
     }
     return NULL;  // Return NULL if the symbol is not found
 }
-
+char* getSymbolType(Symbol* symbol){
+    
+    return symbol->type_str;
+    }
 
 void updateRegister(SymbolTable* table, const char* key, char* registerName) {
     Symbol* symbol = getSymbol(table, key);
@@ -844,7 +848,17 @@ void updateRegister(SymbolTable* table, const char* key, char* registerName) {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }
 }
+void updatetemp(SymbolTable* table, const char* key, char* registerName) {
+    Symbol* symbol = getSymbol(table, key);
+    if (symbol != NULL) {
+        symbol->temp = registerName;
+        print_symbol_table(table, 0);
 
+
+    } else {
+        printf("ERROR: Symbol %s not found in the symbol table\n", key);
+    }
+}
 
 // Function to return the symbol table for a given scope
 SymbolTable* get_symbol_table(OuterSymbolTable* outerTable, const char* scopeName) {
@@ -900,6 +914,33 @@ char* getTempVar(Symbol* symbol) {
 
 // New function to update the value of a symbol. Not yet needed. Will eventually be add into effect
 //Trying new updateValue with TempVar
+
+void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type) {
+    Symbol* symbol = getSymbol(table, key);
+    if (symbol != NULL) {
+        fprintf(stdout, "Debug: Updating '%s' with type %s, current type %s\n", 
+                key, type == TYPE_FLOAT ? "FLOAT" : "INT", symbol->type == TYPE_FLOAT ? "FLOAT" : "INT");
+
+        if (type == TYPE_FLOAT) {
+            symbol->value.floatValue = new_value.floatValue;
+            printf("====Float Value==== %f\n",symbol->value.floatValue );
+        } else if(type == TYPE_INT){
+            symbol->value.intValue = new_value.intValue;
+            printf("====Int Value==== %d\n",symbol->value.intValue );
+        }else if(type == TYPE_STRING){
+            symbol->value.stringValue = new_value.stringValue;
+            printf("====String Value==== %s\n",symbol->value.stringValue );
+        }
+
+        // Check if tempVar needs to be created
+        if (symbol->tempVar == NULL) {
+            symbol->tempVar = createTempVar();
+            printf("new temp var created in updateValue(): %s\n", symbol->tempVar);
+        }
+    }
+        printf("Updated value of %s with tempVar %s\n", key, symbol->tempVar);
+}
+
 void updateValueInt(SymbolTable* table, const char* key, int new_value) {
     Symbol* symbol = getSymbol(table, key);
     if (symbol != NULL ) {
@@ -915,6 +956,7 @@ void updateValueInt(SymbolTable* table, const char* key, int new_value) {
         }
         
         printf("Updated value of %s to %d with tempVar %s\n", key, new_value, symbol->tempVar);
+
     } else {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }
