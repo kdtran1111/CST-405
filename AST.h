@@ -59,7 +59,6 @@ typedef struct ASTNode
 
         struct
         {
-            int declared; // 1 for yes, 0 for no
             char* type;
             int size;
             char* id;
@@ -75,7 +74,6 @@ typedef struct ASTNode
         {   
             char* id;
             char* op;
-            char* expectedType;
             struct ASTNode* Expr; //was expression
             
         }Stmnt;
