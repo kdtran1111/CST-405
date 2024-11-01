@@ -1279,7 +1279,125 @@ void generate_param_pass_tac(ASTNode* node, SymbolTable* symbol_table)
             break;
     }
 }
+void generate_array_assign_tac(ASTNode* node, SymbolTable* symbol_table)
+{
+    // Get symbol for current array
+    Symbol* symbol = getSymbol(symbol_table, curr_array);
 
+    fprintf(stdout, "array size: %d, array_counter: %d\n", symbol->size, array_counter);
+    if (array_counter >= symbol->size)
+    {
+        printf("ERROR: Too many arguments for array %s\n", curr_array);
+        exit(1);
+    }
+
+    switch (node->type)
+    {
+        case NodeType_SimpleExpr:
+        {
+            if (strstr(symbol->type_str, "int") == NULL)
+            {
+                fprintf(stdout, "ERROR: array %s is of type %s\n", curr_array, symbol->type_str);
+                exit(1);
+            }
+
+            else
+            {
+                char result[10];
+                char* str = (char*)malloc(10 * sizeof(char));
+                snprintf(str, 10, "%d", node->SimpleExpr.value);
+                sprintf(result, "%s[%d]", symbol->tempVar, array_counter); 
+                
+                TAC* newTac = (TAC*)malloc(sizeof(TAC));
+                newTac->keyword = strdup("array_assign");
+                newTac->result = strdup(result);
+                newTac->arg1 = strdup(str);
+                appendTAC(&tacHead, newTac);
+            }
+            break;
+        }
+
+        case NodeType_SimpleID:
+        {
+            Symbol* passed_symbol = getSymbol(symbol_table, node->SimpleID.id);
+            if (strstr(symbol->type_str, passed_symbol->type_str) == NULL)
+            {
+                fprintf(stdout, "ERROR: array %s is of type %s\n", curr_array, symbol->type_str);
+                exit(1);
+            }
+
+            else if (passed_symbol->tempVar == NULL)
+            {
+                fprintf(stdout, "ERROR: ID %s not initialized\n", passed_symbol->id);
+                exit(1);
+            }   
+
+            else
+            {
+                char result[10];
+                snprintf(result, 10, "%s[%d]", symbol->tempVar, array_counter);
+
+                TAC* newTac = (TAC*)malloc(sizeof(TAC));
+                newTac->keyword = strdup("array_assign");
+                newTac->result = strdup(result);
+                newTac->arg1 = strdup(passed_symbol->tempVar);
+                appendTAC(&tacHead, newTac);
+            }
+
+            break;
+        }
+
+        case NodeType_SimpleFloat:
+        {
+            if (strstr(symbol->type_str, "float") == NULL)
+            {
+                fprintf(stdout, "ERROR: array %s is of type %s\n", curr_array, symbol->type_str);
+                exit(1);
+            }
+
+            else 
+            {
+                char result[10];
+                char* str = (char*)malloc(20 * sizeof(char));
+                snprintf(str, 20, "%f", node->SimpleFloat.value);
+                sprintf(result, "%s[%d]", symbol->tempVar, array_counter); 
+                
+                TAC* newTac = (TAC*)malloc(sizeof(TAC));
+                newTac->keyword = strdup("array_assign");
+                newTac->result = strdup(result);
+                newTac->arg1 = strdup(str);
+                appendTAC(&tacHead, newTac);
+            }
+            break;
+
+        }
+
+        case NodeType_SimpleString:
+        {
+            if (strstr(symbol->type_str, "string") == NULL)
+                {
+                    fprintf(stdout, "ERROR: array %s is of type %s\n", curr_array, symbol->type_str);
+                    exit(1);
+                }
+
+            else
+            {
+                char result[10];
+                sprintf(result, "%s[%d]", symbol->tempVar, array_counter); 
+                
+                TAC* newTac = (TAC*)malloc(sizeof(TAC));
+                newTac->keyword = strdup("array_assign");
+                newTac->result = strdup(result);
+                newTac->arg1 = strdup(node->SimpleString.value);
+                appendTAC(&tacHead, newTac);
+            }
+        }
+
+        break;
+
+    }
+}
+message.txt
 
 // Create a temporary variable
 char* createTempVar() {
