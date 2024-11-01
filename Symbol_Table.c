@@ -97,24 +97,23 @@ SymbolTable* deep_copy_symbol_table(SymbolTable* original) {
             // Copy the symbol
             Symbol* new_symbol = malloc(sizeof(Symbol));
             new_symbol->type_str = strdup(current_node->var->type_str);
-            new_symbol->id = strdup(current_node->var->id);
 
             // If the symbol has fields (struct fields), just copy the basic values
             new_symbol->size = current_node->var->size;
 
             // Copy the value (assuming primitive types for now)
             // For more complex data types, you may need further deep copying
-            if (strcmp(current_node->var->type_str, "int") == 0) 
+            if (strcmp(current_node->var->type_str, "INT") == 0) 
             {
                 new_symbol->value.intValue = current_node->var->value.intValue;
             } 
 
-            else if (strcmp(current_node->var->type_str, "int") == 0) 
+            else if (strcmp(current_node->var->type_str, "INT") == 0) 
             {
                 new_symbol->value.floatValue = current_node->var->value.floatValue;
             }
 
-            else if (strcmp(current_node->var->type_str, "string") == 0) 
+            else if (strcmp(current_node->var->type_str, "STRING") == 0) 
             {
                 new_symbol->value.stringValue = strdup(current_node->var->value.stringValue);
             }
@@ -152,7 +151,6 @@ void insert_struct_symbol(SymbolTable* table, char* var_name, SymbolTable* struc
     // Create a new symbol with original struct variables
     Symbol* symbol = malloc(sizeof(Symbol));
     symbol->type_str = strdup(struct_name);
-    symbol->id = strdup(var_name);
     symbol->value.structValue = deep_copy_symbol_table(struct_table);
 
     // Add the new symbol node to the front of the linked list at this index
@@ -181,9 +179,8 @@ void insert_int_symbol(SymbolTable* table, char* varName, int value) {
 
     // Create a new symbol with variable info
     Symbol* symbol = malloc(sizeof(Symbol));
-    symbol->type_str = strdup("int"); 
+    symbol->type_str = strdup("INT"); 
     symbol->value.intValue = value;
-    symbol->id = strdup(varName);
 
     // Add the new symbol node to the front of the linked list at this index
     newNode->var = symbol;
@@ -212,10 +209,9 @@ void insert_float_symbol(SymbolTable* table, char* varName, float value) {
 
     // Create a new symbol with variable info
     Symbol* symbol = malloc(sizeof(Symbol));
-    symbol->type_str = strdup("float"); 
+    symbol->type_str = strdup("FLOAT"); 
     symbol->value.floatValue = value;
     symbol->size = 0;
-    symbol->id = strdup(varName);
 
     // Add the new symbol node to the front of the linked list at this index
     newNode->var = symbol;
@@ -241,10 +237,9 @@ void insert_string_symbol(SymbolTable* table, char* varName, const char* value) 
 
     // Create a new symbol with variable info
     Symbol* symbol = malloc(sizeof(Symbol));
-    symbol->type_str = strdup("string");  
+    symbol->type_str = strdup("STRING");  
     symbol->value.stringValue = strdup(value);  
     symbol->size = 0;
-    symbol->id = strdup(varName);
 
     // Add the new symbol node to the front of the linked list at this index
     newNode->var = symbol;
@@ -269,9 +264,8 @@ void insert_int_arr_symbol(SymbolTable* table, char* varName, int size) {
 
     // Create a new symbol with variable info
     Symbol* symbol = malloc(sizeof(Symbol));
-    symbol->type_str = strdup("int_array");
+    symbol->type_str = strdup("INT_ARRAY");
     symbol->size = size;
-    symbol->id = strdup(varName);
     symbol->value.intArray = malloc(sizeof(int) * size);  // Allocate space for the int array
 
     // Add the new symbol node to the front of the linked list at this index
@@ -297,9 +291,8 @@ void insert_float_arr_symbol(SymbolTable* table, char* varName, int size) {
 
     // Create a new symbol with variable info
     Symbol* symbol = malloc(sizeof(Symbol));
-    symbol->type_str = strdup("float_array");
+    symbol->type_str = strdup("FLOAT_ARRAY");
     symbol->size = size;
-    symbol->id = strdup(varName);
     symbol->value.floatArray = malloc(sizeof(float) * size);  // Allocate space for the float array
 
     // Add the new symbol node to the front of the linked list at this index
@@ -324,9 +317,8 @@ void insert_string_arr_symbol(SymbolTable* table, char* varName, int size) {
 
     // Create a new symbol with variable info
     Symbol* symbol = malloc(sizeof(Symbol));
-    symbol->type_str = strdup("string_array");
+    symbol->type_str = strdup("STRING_ARRAY");
     symbol->size = size;
-    symbol->id = strdup(varName);
     symbol->value.stringArray = malloc(sizeof(char*) * size);  // Allocate space for the string array
 
     // Add the new symbol node to the front of the linked list at this index
@@ -425,159 +417,6 @@ void print_string_array(char** arr, int size) {
 }
 
 
-LinkedListNode* get_next_register(SymbolTable* table, int next_reg)
-{
-    for (int i = 0; i < table->size; i++) {
-        SymbolNode* current = table->table[i];
-
-        while (current != NULL) {
-           //current->var->value.intValue
-
-           if(current->var->tempVar != NULL)
-           {
-               if (current->var->tempVar[0] == 'a')
-               {
-                    int reg = current->var->tempVar[1] - '0';
-
-                    if (reg == next_reg)
-                    {
-                        LinkedListNode* newNode = malloc(sizeof(LinkedListNode));
-                        newNode->next = NULL;
-                        newNode->symbol = current->var;
-                        return newNode;
-                    }
-               }
-           }
-
-            current = current->next;
-        }
-    }
-    return NULL;
-
-}
-
-
-LinkedListNode* create_parameter_linked_list(SymbolTable* table)
-{
-    int next_reg = 0;
-    int change_made = 1;
-    LinkedListNode* head = NULL;
-    LinkedListNode* previous = NULL;
-
-    while (change_made) 
-    {
-        LinkedListNode* newNode = get_next_register(table, next_reg);
-        
-        if (newNode == NULL)
-        {
-            change_made = 0;
-        } 
-
-        else 
-        {
-            if (head == NULL) 
-            {
-                head = newNode; 
-                previous = head;
-            } 
-            else 
-            {
-                previous->next = newNode;
-                previous = newNode; 
-            }
-        }
-        next_reg++;
-    }
-
-    return head;
-}
-
-
-// Function to print the linked list
-void print_linked_list(LinkedListNode* head) {
-    LinkedListNode* current = head;
-
-    while (current != NULL) {
-        Symbol* symbol = current->symbol; 
-
-        fprintf(stdout,"TempVar: %s -> ",symbol->tempVar);
-
-        current = current->next; 
-    }
-
-    printf("NULL\n");
-}
-
-
-int get_struct_size(SymbolTable* table) 
-{
-    int size = 0;
-    for (int i = 0; i < table->size; i++) {
-        SymbolNode* current = table->table[i];
-
-        while (current != NULL) {
-           //current->var->value.intValue
-
-           if(current != NULL)
-           {
-            
-               if (strcmp(current->var->type_str, "int") == 0|| strcmp(current->var->type_str, "float") == 0)
-               {
-                    size += 4;
-               }
-
-               else if (strcmp(current->var->type_str, "string") == 0)
-               {
-                    size += 20;
-               }
-           }
-
-            current = current->next;
-        }
-    }
-    return size;    
-}
-
-
-void update_struct_variable_registers(SymbolTable* table, char* tempVar)
-{
-    int curr_var = 0;
-
-    char result[10];
-    char* str = (char*)malloc(10 * sizeof(char));
-
-    for (int i = 0; i < table->size; i++) {
-        SymbolNode* current = table->table[i];
-
-        while (current != NULL) {
-           //current->var->value.intValue
-
-           if(current != NULL)
-           {
-                sprintf(result, "%s[%d]", tempVar, curr_var); 
-                current->var->tempVar = strdup(result);
-
-                curr_var += 1;
-           }
-
-            current = current->next;
-        }
-    }
-    printf("number of variables: %d\n", curr_var);
-}
-
-
-void print_array_linked_list(LinkedListNode* head) {
-    LinkedListNode* current = head;
-    while (current != NULL) {
-        Symbol* symbol = current->symbol;
-
-        fprintf(stdout, "Array: %s -> ", symbol->id);
-        current = current->next;
-    }
-    fprintf(stdout, "NULL\n");
-}
-
 
 
 // Function to print a single symbol table (used for each scope)
@@ -589,23 +428,23 @@ void print_symbol_table(SymbolTable* table, int indent) {
             // Print indent level
             for (int j = 0; j < indent; j++) printf(" ");
             printf("Variable: %s, Type: %s, TempVar: %s, Size: %d, Value: ",
-                   current->var->id, current->var->type_str, current->var->tempVar, current->var->size);
+                   current->key, current->var->type_str, current->var->tempVar, current->var->size);
 
             // Print the value based on the type_string
-            if (strcmp(current->var->type_str, "int") == 0) {
+            if (strcmp(current->var->type_str, "INT") == 0) {
                 printf("%d\n", current->var->value.intValue);
-            } else if (strcmp(current->var->type_str, "float") == 0) {
+            } else if (strcmp(current->var->type_str, "FLOAT") == 0) {
                 printf("%f\n", current->var->value.floatValue);
-            }  else if (strcmp(current->var->type_str, "string") == 0) {
+            }  else if (strcmp(current->var->type_str, "STRING") == 0) {
                 printf("%s\n", current->var->value.stringValue);
             }
-            else if (strcmp(current->var->type_str, "int_array") == 0) {
+            else if (strcmp(current->var->type_str, "INT_ARRAY") == 0) {
                 print_int_array(current->var->value.intArray, current->var->size);
             }
-            else if (strcmp(current->var->type_str, "float_array") == 0) {
+            else if (strcmp(current->var->type_str, "FLOAT_ARRAY") == 0) {
                 print_float_array(current->var->value.floatArray, current->var->size);
             }
-            else if (strcmp(current->var->type_str, "string_array") == 0) {
+            else if (strcmp(current->var->type_str, "STRING_ARRAY") == 0) {
                 print_string_array(current->var->value.stringArray, current->var->size);
             }
             else
@@ -636,127 +475,6 @@ void print_table(OuterSymbolTable* outerTable) {
             currentScope = currentScope->next;  // Move to the next scope in the list
         }
     }
-}
-
-
-LinkedListNode* get_arrays_in_scope(SymbolTable* table, OuterSymbolTable* outer_table)
-{
-    LinkedListNode* head = NULL;
-    LinkedListNode* prev_node = NULL;
-    LinkedListNode* current_node = NULL;
-    for (int i = 0; i < table->size; i++) {
-        SymbolNode* current = table->table[i];
-
-        // Go through each symbol
-        while (current != NULL) {
-
-            // If the symbol is an array, add it to the linked list
-            if (strcmp(current->var->type_str, "int_array") == 0 || strcmp(current->var->type_str, "float_array") == 0 || strcmp(current->var->type_str, "string_array") == 0){
-                printf("Found array: %s\n", current->var->id);
-                // Update current_node
-                current_node = malloc(sizeof(LinkedListNode));
-                current_node->next = NULL;
-                current_node->symbol = current->var;
-
-                // Update head if null
-                if (head == NULL)
-                {
-                    
-                    head = current_node;
-                }
-
-                // Link previous and current
-                else
-                {
-                    prev_node->next = current_node;
-                }     
-
-                // Update prev_node
-                prev_node = current_node;   
-            }
-
-            else if (lookup_scope(outer_table, current->var->type_str) == 1)
-            {
-                printf("Looking in struct %s\n", current->var->type_str);
-
-                if(strcmp(get_scope_type(outer_table, current->var->type_str), "STRUCT") == 0)
-                {   
-                    printf("Found struct: %s\n", current->var->id);
-                    // Update current_node
-                    current_node = malloc(sizeof(LinkedListNode));
-                    current_node->next = NULL;
-                    current_node->symbol = current->var;
-
-                    // Update head if null
-                    if (head == NULL)
-                    {
-                        
-                        head = current_node;
-                    }
-
-                    // Link previous and current
-                    else
-                    {
-                        prev_node->next = current_node;
-                    }     
-
-                    // Update prev_node
-                    prev_node = current_node; 
-                }
-            }
-
-            current = current->next;
-        }
-    }
-    return head;
-}
-
-
-LinkedListNode* create_array_linked_list(OuterSymbolTable* outerTable) 
-{
-    LinkedListNode* head = NULL;
-    LinkedListNode* current_node = NULL;
-    LinkedListNode* prev_node = NULL;
-
-    for (int i = 0; i < outerTable->size; i++) {
-        ScopeNode* currentScope = outerTable->table[i];
-        if (currentScope != NULL)
-        {
-        fprintf(stdout, "Looking through scope: %s\n", currentScope->key);
-        }
-        while (currentScope != NULL) {
-            if (currentScope->scopeTable != NULL) 
-            {
-                current_node = get_arrays_in_scope(currentScope->scopeTable, outerTable);
-                if (current_node != NULL)
-                {
-                if (head == NULL)
-                {
-                    head = current_node;
-
-                }
-
-                else 
-                {
-                    prev_node->next = current_node;
-                    
-                }
-                prev_node = get_linked_list_tail(current_node);
-                } 
-            }
-            currentScope = currentScope->next;  // Move to the next scope in the list
-        }
-    }
-    return head;
-}
-
-LinkedListNode* get_linked_list_tail(LinkedListNode* head)
-{
-    LinkedListNode* current = head;
-    while (current->next != NULL) {
-        current = current->next;
-    }
-    return current;
 }
 
 
@@ -914,7 +632,6 @@ char* getTempVar(Symbol* symbol) {
 
 // New function to update the value of a symbol. Not yet needed. Will eventually be add into effect
 //Trying new updateValue with TempVar
-
 void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type) {
     Symbol* symbol = getSymbol(table, key);
     if (symbol != NULL) {
@@ -939,23 +656,6 @@ void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarTyp
         }
 
         printf("Updated value of %s with tempVar %s\n", key, symbol->tempVar);
-
-void updateValueInt(SymbolTable* table, const char* key, int new_value) {
-    Symbol* symbol = getSymbol(table, key);
-    if (symbol != NULL ) {
-        symbol->value.intValue = new_value;
-        //print_table(table);
-       /*
-       No need to update tempVar since it's still be in the same register with the declaration of the variable
-       */
-        // If this is the first time assigning a value, create a temp variable
-        if (symbol->tempVar == NULL) {
-            symbol->tempVar = createTempVar();
-            printf("new temp var created in updateaValue():   %s\n", symbol->tempVar);
-        }
-        
-        printf("Updated value of %s to %d with tempVar %s\n", key, new_value, symbol->tempVar);
-
     } else {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }

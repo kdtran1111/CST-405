@@ -6,183 +6,22 @@
 //#include "parser.y"
 char* global_scope = "global";
 
-char* curr_scope = "global";
-
-
-int paramCounter = 0; // Variable to keep track registers for parameters
-
-
 int tempVars[20];
-int paramVars[3];
-int main_declared = 0; // Variable to keep track if the main function has been declared
 char* currentID;
 char* writeID;
 TAC* tacHead = NULL;  // Global head of the TAC instructions list
 extern int declaredSymbol;
 extern int lines;
 
-
 OuterSymbolTable* outer_table;
-
-// Variables to keep track of parameter passing
-LinkedListNode* curr_param;
-int function_called = 0; 
-
-// Variables to keep track of array assignment
-int array_assigned = 0;
-int array_counter = 0;
-char* curr_array;
-
-// Variable to keep track of stmnt start
-int stmnt_started = 0;
-
-OuterSymbolTable* outer_table_semantic;
-
-char* createParameterVar() { 
-    char* paramVar = (char*)malloc(10 * sizeof(char));
-    snprintf(paramVar, 10, "a%d", paramCounter++);
-    fprintf(stdout,"Parameter var created: %s\n", paramVar);
-    return paramVar;
-}
-
-// Function to get head for array linked list
-LinkedListNode* populate_data_section(OuterSymbolTable* outer_table_semantic)
-{
-
-    print_table(outer_table_semantic);
-    LinkedListNode* head = create_array_linked_list(outer_table_semantic);
-    print_array_linked_list(head);
-
-    return head;
-}
-
 // Error handling function for semantic analysis
 void semantic_error(const char* message, int lines) {
     fprintf(stderr, "SEMANTIC ERROR (Line %d): %s\n", lines, message);
     //exit(1);
 }
 
-
 void def_outer_table_semantic(OuterSymbolTable* outer_table_semantic){
     outer_table= outer_table_semantic;
-
-
-// Print the TAC instructions to a file
-void printTACToFile(const char* filename, TAC* tac) {
-    fprintf(stdout,"--------------Printing TAC to file---------------\n");
-
-    FILE* file = fopen(filename, "w");
-    if (file == NULL) {
-        perror("Error opening file");
-        return;
-    }
-    int cntr = 0;
-    TAC* previous = NULL;
-    TAC* current = tac;
-    while (current != NULL) {
-
-        if (current->arg2!=NULL && current->arg1!=NULL) 
-        {
-
-            if (strcmp(current->arg1, "") == 0) 
-            {
-                current->arg1 = previous->result;    
-            }
-
-            fprintf(file, "%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
-            fprintf(stdout,"%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
-        }
-
-        else if(current->keyword != NULL)
-        {
-            if (strcmp(current->keyword, "data_for_array") == 0)
-            {
-                fprintf(file, "%s: .space %s\n", current->result, current->arg1);
-                fprintf(stdout, "%s: .space %s\n", current->result, current->arg1);
-            }
-            else if (strcmp(current->keyword, "write") == 0)
-            {
-                fprintf(file, "%s %s\n", current->keyword, current->arg1);
-                fprintf(stdout,"%s %s\n", current->keyword, current->arg1);
-            }
-
-            else if(strcmp(current->keyword, "jump") == 0)
-            {
-                fprintf(file, "%s %s\n", current->keyword, current->arg1);
-                fprintf(stdout,"%s %s\n", current->keyword, current->arg1);
-            }
-
-            else if(strcmp(current->keyword, "data") == 0)
-            {
-                fprintf(file, ".%s\n", current->keyword);
-                fprintf(stdout,".%s\n", current->keyword);
-            }
-            else if(strcmp(current->keyword, "text") == 0)
-            {
-                fprintf(file, "\n.%s\n", current->keyword);
-                fprintf(stdout,"\n.%s\n", current->keyword);
-            }
-            else if(strcmp(current->keyword, "globl") == 0)
-            {
-                fprintf(file, "\n.%s\n", current->keyword);
-                fprintf(stdout,"\n.%s\n", current->keyword);
-            }
-
-            else if(strcmp(current->keyword, "arr_decl") == 0)
-            {
-                fprintf(file, "%s = %s\n", current->result, current->arg1);
-                fprintf(stdout,"%s = %s\n", current->result, current->arg1);
-            }
-
-            else if(strcmp(current->keyword, "struct_decl") == 0)
-            {
-                fprintf(file, "%s = %s\n", current->result, current->arg1);
-                fprintf(stdout,"%s = %s\n", current->result, current->arg1);
-            }
-
-            else if(strcmp(current->keyword, "array_assign") == 0)
-            {
-                fprintf(file, "%s = %s\n", current->result, current->arg1);
-                fprintf(stdout,"%s = %s\n", current->result, current->arg1);
-            }
-            else 
-            {
-                fprintf(file, "\n%s:\n", current->keyword);
-                fprintf(stdout,"\n%s:\n", current->keyword);
-            }
-        }
-
-        //avoid printing NULL into the TAC when it's simpleExpr 
-        else if( current->result!=NULL) {
-        
-        fprintf(file, "%s = %s\n", current->result, current->arg1);
-        fprintf(stdout,"%s = %s\n", current->result, current->arg1);
-        } 
-        
-
-        if (cntr >= 1)
-        {
-            previous = current;
-            current = current->next;
-        }
-
-        else 
-        {
-            current = current->next; 
-        }
-        cntr++;
-    }
-    fprintf(file, "\n");
-    fprintf(stdout, "\n");
-
-    fclose(file);
-}
-
-
-
-void def_outer_table_semantic(OuterSymbolTable* outer_table_semantic){
-    outer_table_semantic= outer_table_semantic;
-
 };
 // Check if a variable is declared
 //ignore the incorrect parameter
@@ -216,9 +55,8 @@ void check_variable_initialized(SymbolTable* symbol_table, const char* id, int l
 
 // Check for type consistency during assignments
 void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* expr, int line) {
-
-    Symbol* symbol = getSymbol(symbol_table, id);
-
+    SymbolTable* symbolTable = get_symbol_table(outer_table, global_scope);
+    Symbol* symbol = getSymbol(symbolTable, id);
      
     if (symbol == NULL) {
         char error_message[256];
@@ -231,7 +69,6 @@ void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* 
     printf("Debug: Variable '%s' has type %s, expr->type is %d\n", id, symbol->type_str, expr->type);
     //Check for Float type
     if (strcmp(symbol->type_str, "FLOAT") == 0 && expr->type != NodeType_SimpleFloat) {
-
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is a float, but assigned a non-float value", id);
         semantic_error(error_message, lines);
@@ -239,16 +76,14 @@ void check_type_consistency(SymbolTable* symbol_table, const char* id, ASTNode* 
     }
     //Check for Int type
     if (strcmp(symbol->type_str, "INT")==0  && expr->type != NodeType_Expr && expr->type != NodeType_SimpleExpr) {
-
         char error_message[256];
-        snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is a float, but assigned a non-float value", id);
+        snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
         semantic_error(error_message, lines);
         return;
     }
-
+    
       //Check for String type
     if (strcmp(symbol->type_str, "STRING")==0   && expr->type != NodeType_SimpleString) {
-
         char error_message[256];
         snprintf(error_message, sizeof(error_message), "Type mismatch: Variable '%s' is an int, but assigned a non-integer value", id);
         semantic_error(error_message, lines);
@@ -286,7 +121,6 @@ void check_array_size(int size, int line) {
 
 // Main function to perform all semantic checks on an array declaration
 void check_array_declaration(SymbolTable* table, const char* type, const char* id, int size, int line) {
-
     Symbol* symbol =getSymbol(table,id);
     //check_array_not_redeclared(table, id, line);
     check_array_type(symbol->type_str, line);
@@ -348,91 +182,11 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table) {
     SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
     switch (node->type) {
         
-
-    check_array_not_redeclared(table, id, line);
-    check_array_type(type, line);
-    check_array_size(size, line);
-}
-
-
-TAC* generate_arrDecl_tac(ASTNode* node) {
-    char* tempResult;
-    TAC* arrDecl_tac = (TAC*)malloc(sizeof(TAC));
-
-    arrDecl_tac->keyword = strdup("arr_decl");
-    tempResult = createTempVar();
-    arrDecl_tac->result = strdup(tempResult);
-    arrDecl_tac->arg1 = strdup(node->VarDecl.id);
-
-    return arrDecl_tac;
-}
-
-
-TAC* generate_structDecl_tac(ASTNode* node) 
-{
-    char* tempResult;
-    TAC* structDecl_tac = (TAC*)malloc(sizeof(TAC));
-
-    structDecl_tac->keyword = strdup("struct_decl");
-    tempResult = createTempVar();
-    structDecl_tac->result = strdup(tempResult);
-    structDecl_tac->arg1 = strdup(node->VarDecl.id);
-
-    return structDecl_tac;
-}
-
-
-// Recursive function for semantic analysis and TAC generation
-void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
-    if (node == NULL) return;
-    
-    //printf("semanticAnalysis: Processing node of type %d\n", node->type);
-    SymbolTable* symbol_Table = get_symbol_table(outer_table_semantic, curr_scope);
-    switch (node->type) {
-
-        case NodeType_VarDecl:
-
-            fprintf(stdout, "\nEntering NodeType_VarDecl: %s, current scope is %s\n", node->VarDecl.id, curr_scope);
-             
-
-            // If this is an array declaration, perform semantic checks
-            if (node->VarDecl.size > 0) {  // Assuming size > 0 indicates an array
-                printf("Semantic analysis for array declaration: %s\n", node->VarDecl.id);
-                check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
-
-                TAC* arrDecl_tac = generate_arrDecl_tac(node);
-
-                appendTAC(&tacHead, arrDecl_tac);
-
-                Symbol* symbol = getSymbol(symbol_Table, node->VarDecl.id);
-                symbol->tempVar = strdup(arrDecl_tac->result);
-
-            }
-
-            else if (lookup_scope(outer_table_semantic,node->VarDecl.type) == 1)
-            {
-                TAC* structDecl_tac = generate_structDecl_tac(node);
-
-                appendTAC(&tacHead, structDecl_tac);
-                fprintf(stdout, "%s = %s\n", structDecl_tac->result, structDecl_tac->arg1);
-
-                //update_struct_variable_registers(SymbolTable* symbol_Table, structDecl_tac->result, structDecl_tac->arg1);
-
-                Symbol* struct_symbol = getSymbol(symbol_Table, node->VarDecl.id);
-                struct_symbol->tempVar = strdup(structDecl_tac->result);
-                update_struct_variable_registers(getSymbol(symbol_Table, node->VarDecl.id)->value.structValue, struct_symbol->tempVar);
-                print_symbol_table(getSymbol(symbol_Table, node->VarDecl.id)->value.structValue, 0);
-                
-            }
-        
-            break;
         case NodeType_Stmnt:
-            stmnt_started = 1;
             currentID  = node->Stmnt.id;
             if (currentID == NULL) {
             fprintf(stderr, "Error: currentID is NULL\n");
             return;
-
 }
             fprintf(stdout,"Semantic analysis for statement, curr ID is %s\n", currentID);
             //Symbol* symbol = getSymbol(symbol_table, node->Stmnt.id);           
@@ -461,7 +215,6 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             // Prepare the new value based on the type
             VarValue newValue;
             VarType varType;
-
             char buffer[20];
             if (node->Stmnt.Expr->type == NodeType_SimpleFloat) {
             varType = TYPE_FLOAT;
@@ -503,15 +256,12 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             newTac->result = getTempVar(symbol);
             appendTAC(&tacHead, newTac);
 
-
             fprintf(stdout, "Generated in generateTAC in simpleExpr\n");
         }
-
             break;
         case NodeType_Expr:
             // Recursively analyze left and right expressions
             
-
             //fprintf(stdout," check = %d\n", node->Expr.check);
             fprintf(stdout,"----------------left-------------\n");
             semanticAnalysis(node->Expr.left, outer_table);
@@ -520,34 +270,10 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             break;
 
         case NodeType_SimpleID:
-            if (function_called == 1)
-            {
-                generate_param_pass_tac(node, symbol_Table);
-                curr_param = curr_param->next;
-            }
-
-            if (array_assigned == 1)
-            {
-                generate_array_assign_tac(node, symbol_Table);
-                array_counter += 1;
-            }
-
-            check_variable_initialized(symbol_Table, node->SimpleID.id, lines);
-
+            check_variable_initialized(symbol_Table, node->SimpleID.id, lines);  // Line number passed as placeholder
             break;
 
         case NodeType_SimpleExpr:
-            if (function_called == 1)
-            {
-                generate_param_pass_tac(node, symbol_Table);
-                curr_param = curr_param->next;
-            }
-
-            if (array_assigned == 1)
-            {
-                generate_array_assign_tac(node, symbol_Table);
-                array_counter += 1;
-            }
         //default:
            break;
 
@@ -563,7 +289,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
                 // Generate TAC for the write statement
                 TAC* newTac = (TAC*)malloc(sizeof(TAC));
                 newTac->keyword = strdup("write");
-        
+
                 // Use the tempVar for the write argument
                 if (symbol->tempVar != NULL) {
                     newTac->arg1 = strdup(symbol->tempVar);
@@ -583,150 +309,45 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
     // Traverse the AST recursively
   
         case NodeType_program:
+            /*
+            */
+            printf("Traversing StructDeclList\n");
+            semanticAnalysis(node->program.StructDeclList, outer_table);
+            printf("Traversing FuncDeclList\n");
+            semanticAnalysis(node->program.FuncDeclList, outer_table);
+            printf("Traversing VarDeclList in program\n");
+            semanticAnalysis(node->program.VarDeclList, outer_table);
+            printf("Traversing StmntList in program\n");
+            semanticAnalysis(node->program.StmntList, outer_table);
+            
+            break;
 
-
+        case NodeType_VarDeclList:
+            /*semanticAnalysis(node->VarDeclList.VarDecl, outer_table);
+            semanticAnalysis(node->VarDeclList.VarDeclList, outer_table);
+            break;
+            
+            printf("Processing VarDeclList node\n");
+        
+                semanticAnalysis(node->VarDeclList.VarDecl, outer_table);  // Process the actual declaration
+                node = node->VarDeclList.VarDeclList;  // Move to the next VarDecl in the list
+        
+            break;
+            */
+            //printf("Traversing VarDeclList in program\n");
+            //semanticAnalysis(node->program.VarDeclList, outer_table);
         case NodeType_StmntList:
             semanticAnalysis(node->StmntList.Stmnt, outer_table);
             semanticAnalysis(node->StmntList.StmntList, outer_table);
             break;
 
 
-        case NodeType_SimpleString:
-
-            // Create data section for arrays
-            TAC* DataTac = (TAC*)malloc(sizeof(TAC));
-            DataTac->keyword = strdup("data");
-            appendTAC(&tacHead, DataTac);
-            LinkedListNode* head = populate_data_section(outer_table_semantic);
-            
-            int size;
-            char *size_string = malloc(20 * sizeof(char));
-
-            TAC* arr_tac = NULL;
-            Symbol* arr_symbol = NULL;
-
-            print_array_linked_list(head);
-
-
-            while (head!=NULL)
-            {
-                arr_symbol = head->symbol;
-                arr_tac = (TAC*)malloc(sizeof(TAC));
-                arr_tac->keyword = strdup("data_for_array");
-
-                // Convert the integer size to a string
-                size = arr_symbol->size * 4;
-                snprintf(size_string, 20, "%zu", size);
-
-                if (strcmp(arr_symbol->type_str, "int_array") == 0 || strcmp(arr_symbol->type_str, "float_array") == 0)
-                {
-                    // Convert the integer size to a string
-                    size = arr_symbol->size * 4;
-                    snprintf(size_string, 20, "%zu", size);
-
-                    // Create a TAC for the array
-                    arr_tac->result = strdup(arr_symbol->id);
-                    arr_tac->arg1 = strdup(size_string);
-                    appendTAC(&tacHead, arr_tac);
-                }
-
-                else if (strcmp(arr_symbol->type_str, "string_array") == 0)
-                {
-                    // Convert the integer size to a string
-                    size = arr_symbol->size * 20;
-                    snprintf(size_string, 20, "%zu", size);
-
-
-                    // Create a TAC for the array
-                    arr_tac->result = strdup(arr_symbol->id);
-                    arr_tac->arg1 = strdup(size_string);
-                    appendTAC(&tacHead, arr_tac);
-                }
-
-                else
-                {   
-                   size = get_struct_size(get_symbol_table(outer_table_semantic, arr_symbol->type_str));
-                   snprintf(size_string, 20, "%zu", size);
-
-                    // Create a TAC for the array
-                    arr_tac->result = strdup(arr_symbol->id);
-                    arr_tac->arg1 = strdup(size_string);
-                    appendTAC(&tacHead, arr_tac);
-                
-                }
-
-                head = head->next;
-            }
-
-
-
-            // Create tac for .text section
-            TAC* TextTac = (TAC*)malloc(sizeof(TAC));
-            TextTac->keyword = strdup("text");
-            appendTAC(&tacHead, TextTac);
-
-            // Create tac for globl
-            TAC* GlobalTac = (TAC*)malloc(sizeof(TAC));
-            GlobalTac->keyword = strdup("globl");
-            appendTAC(&tacHead, GlobalTac);
-
-            printf("Traversing StructDeclList\n");
-            semanticAnalysis(node->program.StructDeclList, outer_table_semantic);
-            printf("Traversing FuncDeclList\n");
-            semanticAnalysis(node->program.FuncDeclList, outer_table_semantic);
-            printf("Traversing VarDeclList in program\n");
-            // Add main if first variable declaration
-            
-            TAC* newTac2 = (TAC*)malloc(sizeof(TAC));
-            newTac2->keyword = strdup("main");
-            appendTAC(&tacHead, newTac2);
-            main_declared = 1;
-            
-            semanticAnalysis(node->program.VarDeclList, outer_table_semantic);
-            printf("Traversing StmntList in program\n");
-            semanticAnalysis(node->program.StmntList, outer_table_semantic);
-            
-            break;
-
-        case NodeType_VarDeclList:
-            semanticAnalysis(node->VarDeclList.VarDecl, outer_table_semantic);
-            semanticAnalysis(node->VarDeclList.VarDeclList, outer_table_semantic);
-            break;
-
-     
-
-
         // New cases for remaining NodeTypes
         case NodeType_SimpleFloat:
-            if (function_called == 1)
-            {
-                generate_param_pass_tac(node, symbol_Table);
-                curr_param = curr_param->next;
-            }
-
-            if(array_assigned == 1)
-            {
-                generate_array_assign_tac(node, symbol_Table);
-                array_counter += 1;
-            }
-
             // Handle float constant or variable logic here
             break;
 
         case NodeType_SimpleString:
-            if (function_called == 1)
-            {
-                generate_param_pass_tac(node, symbol_Table);
-                curr_param = curr_param->next;
-            }
-
-            if (array_assigned == 1)
-            {
-                generate_array_assign_tac(node, symbol_Table);
-                array_counter += 1;
-            }
-
-
             // Handle string constant or variable logic here
             break;
 
@@ -744,146 +365,55 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
 
         case NodeType_FuncDeclList:
             // Function declaration list traversal
-
-
-            semanticAnalysis(node->FuncDeclList.FuncDecl, outer_table_semantic);
-            semanticAnalysis(node->FuncDeclList.FuncDeclList, outer_table_semantic);
+            semanticAnalysis(node->FuncDeclList.FuncDecl, outer_table);
+            semanticAnalysis(node->FuncDeclList.FuncDeclList, outer_table);
             break;
 
         case NodeType_FuncDecl:
-            printf("Traversing FuncDecl\n");
-            curr_scope = strdup(node->FuncDecl.id);
-
-            TAC* funcTac = (TAC*)malloc(sizeof(TAC));
-            funcTac->keyword = strdup(curr_scope);
-            appendTAC(&tacHead, funcTac);
-
-            semanticAnalysis(node->FuncDecl.ParamList, outer_table_semantic);
-            semanticAnalysis(node->FuncDecl.VarDeclList, outer_table_semantic);
-            semanticAnalysis(node->FuncDecl.StmntList, outer_table_semantic);
-            semanticAnalysis(node->FuncDecl.ReturnStmnt, outer_table_semantic);
-
-            // Create TAC node
-            funcTac = (TAC*)malloc(sizeof(TAC));
-            funcTac->keyword = strdup("jump");
-            funcTac->arg1 = strdup("end_func");
-            appendTAC(&tacHead, funcTac);
-
+            // Analyze function declarations here
             break;
 
         case NodeType_ParamList:
             // Traverse parameter list
-
-
-            semanticAnalysis(node->ParamList.Param, outer_table_semantic);
-            semanticAnalysis(node->ParamList.ParamList, outer_table_semantic);
+            semanticAnalysis(node->ParamList.Param, outer_table);
+            semanticAnalysis(node->ParamList.ParamList, outer_table);
             break;
 
         case NodeType_Param:
-            Symbol* curr_symbol = getSymbol(symbol_Table, node->Param.id);
-            if (symbol != NULL) 
-            {
-                char* paramVar = createParameterVar();
-                updateRegister(symbol_Table, node->Param.id, paramVar);
-                printf("tempVar for %s is %s\n", node->Param.id, curr_symbol->tempVar);
-            }
-            else
-            {
-                printf("ERROR: cant find symbol for %s\n", node->Param.id);
-            }
-
-
             // Analyze individual parameters
             break;
 
         case NodeType_ReturnStmnt:
-
-            if (strcmp(get_scope_type(outer_table_semantic, curr_scope), "void") != 0)
-            {
-
-                Symbol* symbol = getSymbol(symbol_Table, node->ReturnStmnt.id);
-                if (symbol == NULL)
-                {
-                    printf("ERROR: variable %s is not declared\n", node->ReturnStmnt.id);
-                    exit(1);
-                }
-
-                else if(symbol->tempVar == NULL)
-                {
-                    printf("ERROR: variable %s is not initialized\n", node->ReturnStmnt.id);
-                    exit(1);
-                }
-
-                else if(strcmp(get_scope_type(outer_table_semantic, curr_scope), getSymbol(symbol_Table, node->ReturnStmnt.id)->type_str) == 0)
-                {
-                    printf("currentID is %s\n", currentID);
-                    printf("current scope: %s", curr_scope);
-                    TAC* return_tac = (TAC*)malloc(sizeof(TAC));
-                    return_tac->result = strdup("v0");
-                    return_tac->arg1 = strdup(getTempVar(getSymbol(symbol_Table, currentID)));
-                    appendTAC(&tacHead, return_tac);
-                }
-
-                else
-                {
-                    printf("ERROR: Function %s returns type %s\n", node->FunctionCall.id, get_scope_type(outer_table_semantic, curr_scope));
-                    exit(1);
-                }
-            }
-
-            paramCounter = 0;
-            curr_scope = strdup("global");
-
-
             // Analyze return statement and check type consistency
             break;
 
         case NodeType_IndexAssignment:
             // Array index assignment logic
-
             // Perform array assignment semantic checks
             check_array_declaration(symbol_Table, node->VarDecl.type, node->IndexAssignment.id, node->VarDecl.size, lines);
                 // Perform array semantic checks
                // check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
-
+                
             break;
 
         case NodeType_ValueList:
             // Traverse list of values (array or other collection)
-
-
-            semanticAnalysis(node->ValueList.Val, outer_table_semantic);
-            semanticAnalysis(node->ValueList.ValueList, outer_table_semantic);
+            semanticAnalysis(node->ValueList.Val, outer_table);
+            semanticAnalysis(node->ValueList.ValueList, outer_table);
             break;
 
         case NodeType_ArrAssignment:
-            
-            array_assigned = 1;
-            curr_array = node->ArrAssignment.id;
-            semanticAnalysis(node->ArrAssignment.ValueList, outer_table_semantic);
-
-            if(getSymbol(symbol_Table, curr_array)-> size > array_counter)
-            {
-                printf("ERROR: Too few arguments for array %s\n", curr_array);
-                exit(1);
-            }
-            
-            array_assigned = 0;
-            curr_array = NULL;
-            array_counter = 0;
             // Array assignment logic
             break;
 
         case NodeType_StructDeclList:
             // Struct declaration list traversal
-
-            semanticAnalysis(node->StructDeclList.StructDecl, outer_table_semantic);
-            semanticAnalysis(node->StructDeclList.StructDeclList, outer_table_semantic);
+            semanticAnalysis(node->StructDeclList.StructDecl, outer_table);
+            semanticAnalysis(node->StructDeclList.StructDeclList, outer_table);
             break;
 
         case NodeType_StructDecl:
-
-
+            // Struct declaration logic
             break;
 
         case NodeType_StructMemberAssignment:
@@ -891,67 +421,24 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             break;
 
         case NodeType_FunctionCall:
-
-
-        case NodeType_VarDecl:
-       
-
-            printf("Function call: %s\n", node->FunctionCall.id);
-            curr_param = create_parameter_linked_list(get_symbol_table(outer_table_semantic, node->FunctionCall.id));
-            print_linked_list(curr_param);
-
-            function_called = 1;
-            semanticAnalysis(node->FunctionCall.valueList, outer_table_semantic);
-            if(curr_param != NULL)
-            {
-                printf("ERROR: function call to %s has too few parameters\n", node->FunctionCall.id);
-                exit(1);
-            }
-            function_called = 0;
-
-            TAC* call_tac = (TAC*)malloc(sizeof(TAC));
-            call_tac->keyword = strdup("jump");
-            call_tac->arg1 = strdup(node->FunctionCall.id);
-            appendTAC(&tacHead, call_tac);
-            
-
-            
-            if (strcmp(get_scope_type(outer_table_semantic, node->FunctionCall.id), "void") != 0)
-            {
-                if (stmnt_started == 0)
-                {
-                    //do nothing
-                }
-                else if(strcmp(get_scope_type(outer_table_semantic, node->FunctionCall.id), getSymbol(symbol_Table, currentID)->type_str) == 0)
-                {
-                    printf("currentID is %s\n", currentID);
-                    call_tac = (TAC*)malloc(sizeof(TAC));
-                    call_tac->arg1 = strdup("v0");
-                    call_tac->result = strdup(getTempVar(getSymbol(symbol_Table, currentID)));
-                    appendTAC(&tacHead, call_tac);
-                }
-
-                else
-                {
-                    printf("ERROR: Function %s returns type %s\n", node->FunctionCall.id, get_scope_type(outer_table_semantic, node->FunctionCall.id));
-                    exit(1);
-                }
-            }
-
-            else if (strcmp(get_scope_type(outer_table_semantic, node->FunctionCall.id), "void") == 0)
-            {   
-                if(stmnt_started == 1)
-                {
-                    printf("ERROR: Function %s returns void\n", node->FunctionCall.id);
-                    exit(1);
-                }
-            }
-            stmnt_started = 0;
+            // Handle function call, check arguments and return type
             break;
 
         case NodeType_TypeCast:
             // Type casting logic
-
+            break;
+        case NodeType_VarDecl:
+            
+             // If this is an array declaration, perform semantic checks
+            /*printf("Semantic analysis for array declaration: %s\n", node->VarDecl.id);
+            
+            if (node->VarDecl.declared==1){
+                check_array_not_redeclared(symbol_Table, node->VarDecl.id, lines);
+            }else{
+                printf("Array declared successful:\n");
+                node->VarDecl.declared=1;
+            }
+            */
             break;
 
         default:
@@ -959,9 +446,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
     }
     printf("==========      current NodeType is %d=     ========\n", node->type);
     if (node->type == NodeType_Expr ) {
-
         TAC* tac = generateTACForExpr(node,outer_table);
-
         // Process or store the generated TAC
         //printTAC(tac);
         appendTAC(&tacHead,tac);
@@ -972,11 +457,9 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
 
 }
 
-
 TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
     SymbolTable* symbol_Table = get_symbol_table(outer_table, global_scope);
     Symbol* symbol = getSymbol(symbol_Table, currentID);
-
     if (expr == NULL) {
         fprintf(stdout,"Error: Expression is NULL.\n");
         return NULL;
@@ -989,7 +472,6 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
     switch (expr->type) {
         case NodeType_Expr: {
             fprintf(stdout,"Generating TAC for expression\n");
-
             if(symbol->tempVar!=NULL){
             tempResult= strdup(symbol->tempVar);
             }
@@ -1033,7 +515,6 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
                     fprintf(stdout, "newTac->arg2 is:  %s in the else \n", newTac->arg2);// DEbug  
                 }
 
-
             } else if (strcmp(newTac->result, tempResult) >0){
             newTac->arg2=tempResult;
             fprintf(stdout,"tempResult is larger than result\n");
@@ -1044,7 +525,8 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             }
          
             // Create a new temp var for the result of the expression
-
+            
+            
             fprintf(stdout, "TempResult: %s\n", tempResult); //Debug
             fprintf(stdout, "newTac->result: %s\n", newTac->result);
             fprintf(stdout,"Generated in generateTAC\n");
@@ -1060,7 +542,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
               //  printf("generate in the else\n");
                 updateRegister(symbol_Table, currentID, newTac->result);
            // }
-
+            
             break;
         }
         case NodeType_SimpleExpr: {
@@ -1164,130 +646,79 @@ void deallocateTempVar(int tempVars[], int index) {
     }
 }
 
+// Print the TAC instructions to a file
+void printTACToFile(const char* filename, TAC* tac) {
+    fprintf(stdout,"--------------Printing TAC to file---------------\n");
 
-void generate_param_pass_tac(ASTNode* node, SymbolTable* symbol_table)
-{
-    if(curr_param == NULL)
-    {
-        printf("ERROR: Too many arguments for function\n");
-        exit(1);
+    FILE* file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
     }
-    switch (node->type)
-    {
-        case NodeType_SimpleID:
+    int cntr = 0;
+    TAC* previous = NULL;
+    TAC* current = tac;
+    while (current != NULL) {
+
+        if (current->arg2!=NULL && current->arg1!=NULL) 
         {
-            Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id);
 
-            if(strcmp(symbol->type_str, curr_param->symbol->type_str) != 0)
+            if (strcmp(current->arg1, "") == 0) 
             {
-                printf("ERROR: Type mismatch\n");
-                exit(1);
+                current->arg1 = previous->result;    
             }
 
-            if (curr_param->symbol->tempVar == NULL)
-            {
-                printf("ERROR: ID %s not initialized\n", curr_param->symbol->id);
-                exit(1);
-            }
-            
-            else
-            {
-                TAC* newTac = (TAC*)malloc(sizeof(TAC));
-                newTac->keyword = strdup("parameterPass");
-                newTac->result = strdup(curr_param->symbol->tempVar);
-                newTac->arg1 = strdup(getTempVar(symbol));
-                printf("GeneratedTac: %s = %s\n", newTac->result, newTac->arg1);
-                appendTAC(&tacHead, newTac);
-            }
-            break;
+            fprintf(file, "%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
+            fprintf(stdout,"%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
         }
 
-        case NodeType_SimpleExpr:
-        {
-            if(strcmp("INT", curr_param->symbol->type_str) != 0)
-            {
-                printf("ERROR: Type mismatch\n");
-                exit(1);
-            }
-            
-            else
-            {
-                char* str = (char*)malloc(10 * sizeof(char));
-                snprintf(str, 10, "%d", node->SimpleExpr.value);
-
-                // Create TAC node
-                TAC* newTac = (TAC*)malloc(sizeof(TAC));
-                newTac->keyword = strdup("parameterPass");
-                newTac->result = strdup(curr_param->symbol->tempVar);
-                newTac->arg1 = strdup(str);
-                appendTAC(&tacHead, newTac);
-
-                printf("GeneratedTac: %s = %s\n", newTac->result, newTac->arg1);
-            }
-
-            break;
-        }
-
-        case NodeType_SimpleFloat:
-        {
-            if(strcmp("FLOAT", curr_param->symbol->type_str) != 0)
-            {
-                printf("ERROR: Type mismatch\n");
-                exit(1);
-            }
-            
-            else
-            {
-                char* str = (char*)malloc(20 * sizeof(char));
-                snprintf(str, 20, "%f", node->SimpleFloat.value);
-
-                // Create TAC node
-                TAC* newTac = (TAC*)malloc(sizeof(TAC));
-                newTac->keyword = strdup("parameterPass");
-                newTac->result = strdup(curr_param->symbol->tempVar);
-                newTac->arg1 = strdup(str);
-                appendTAC(&tacHead, newTac);
-
-                printf("GeneratedTac: %s = %s\n", newTac->result, newTac->arg1);
-            }
-            break;
-        }
-
-        case NodeType_SimpleString:
-        {
-            if(strcmp("STRING", curr_param->symbol->type_str) != 0)
-            {
-                printf("ERROR: Type mismatch\n");
-                exit(1);
-            }
-            
-            else
-            {
-                // Create TAC node
-                TAC* newTac = (TAC*)malloc(sizeof(TAC));
-                newTac->keyword = strdup("parameterPass");
-                newTac->result = strdup(curr_param->symbol->tempVar);
-                newTac->arg1 = strdup(node->SimpleString.value);
-                appendTAC(&tacHead, newTac);
-
-                printf("GeneratedTac: %s = %s\n", newTac->result, newTac->arg1);
-            }
-            break;
-        }
+        //avoid printing NULL into the TAC when it's simpleExpr 
+        else if ( current->result!=NULL) {
         
-        default:
-            break;
-    }
-}
+        fprintf(file, "%s = %s\n", current->result, current->arg1);
+        fprintf(stdout,"%s = %s\n", current->result, current->arg1);
+        } 
+        
+        else if (strcmp(current->keyword, "write") == 0)
+        {
+        fprintf(file, "%s %s\n", current->keyword, current->arg1);
+        fprintf(stdout,"%s %s\n", current->keyword, current->arg1);
+        }
 
+        else if(strcmp(current->keyword, "jump") == 0)
+        {
+            fprintf(file, "%s %s\n", current->keyword, current->arg1);
+            fprintf(stdout,"%s %s\n", current->keyword, current->arg1);
+        }
+
+        else
+        {
+            fprintf(file, "\n%s:\n", current->keyword);
+            fprintf(stdout,"\n%s:\n", current->keyword);
+        }
+
+        if (cntr >= 1)
+        {
+            previous = current;
+            current = current->next;
+        }
+
+        else 
+        {
+            current = current->next; 
+        }
+        cntr++;
+    }
+
+    fclose(file);
+}
 
 // Create a temporary variable
 char* createTempVar() {
+
     static int tempCounter = 0;
     char* tempVar = (char*)malloc(10 * sizeof(char));
     snprintf(tempVar, 10, "t%d", tempCounter++);
     fprintf(stdout,"Temp var created: %s\n", tempVar);
     return tempVar;
-
 }
-

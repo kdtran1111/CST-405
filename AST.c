@@ -16,8 +16,8 @@ void print_ast(ASTNode* node, int indent)
         case NodeType_program:
             printf("Program:\n");
             print_ast(node->program.StructDeclList, indent + 1);
-            print_ast(node->program.FuncDeclList, indent + 1);
             print_ast(node->program.VarDeclList, indent + 1);
+            print_ast(node->program.FuncDeclList, indent + 1);
             print_ast(node->program.StmntList, indent + 1);
             break;
 
