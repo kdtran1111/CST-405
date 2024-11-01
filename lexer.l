@@ -152,4 +152,3 @@ int|char|string|float|bool	{words++; chars += strlen(yytext);
 		}
 
 %%
-

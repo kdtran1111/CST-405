@@ -81,8 +81,8 @@ program:
         root = malloc(sizeof(ASTNode));
 		root->type = NodeType_program;
         root->program.StructDeclList = $1;
-		root->program.VarDeclList = $2;
-        root->program.FuncDeclList = $3;
+		root->program.VarDeclList = $3;
+        root->program.FuncDeclList = $2;
 		root->program.StmntList = $4;
     }
      |
@@ -92,6 +92,16 @@ program:
         root = malloc(sizeof(ASTNode));
         root->type = NodeType_program;
         root->program.StmntList = $1;
+    }
+    |
+    StructDeclList FuncDeclList VarDeclList 
+    {
+        printf("The PARSER has started\n");
+        root = malloc(sizeof(ASTNode));
+		root->type = NodeType_program;
+        root->program.StructDeclList = $1;
+		root->program.VarDeclList = $3;
+        root->program.FuncDeclList = $2;
     }
 
 ;
@@ -149,10 +159,11 @@ VarDecl:
         {
             $$ = malloc(sizeof(ASTNode));
 			$$->type = NodeType_VarDecl;
-			$$->VarDecl.id = strdup($2);
+            printf("PARSER: Created VarDecl node for array: %s, size: %d\n", $3, $5);
+			$$->VarDecl.id = strdup($3);
             $$->VarDecl.size = $5;
             print_table(outer_table);
-
+            
             if (strcmp($2, "int") == 0)
             {
                 insert_int_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
@@ -161,13 +172,13 @@ VarDecl:
 
             else if (strcmp($2, "float") == 0)
             {
-                insert_int_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
+                insert_float_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
                 $$->VarDecl.type = strdup("float_arr");
             }
             
             else if (strcmp($2, "string") == 0)
             {
-                insert_int_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
+                insert_string_arr_symbol(get_symbol_table(outer_table, current_scope), $3, $5);
                 $$->VarDecl.type = strdup("string_arr");
             }
 
@@ -192,6 +203,7 @@ VarDecl:
             if (strcmp($1, "int") == 0)
             {
                 insert_int_symbol(get_symbol_table(outer_table, current_scope), $2, 0);
+                break;
             }
 
             else if (strcmp($1, "float") == 0)
@@ -293,7 +305,7 @@ FuncDecl:
 
         current_scope = "global" ; 
         printf("PARSER: recognized function declaration");
-    }  
+    }   
     |
     FUNC VOID ID {insert_scope(outer_table, $3, 10, "void"); current_scope = $3;} LPAR ParamList RPAR LCURL VarDeclList StmntList ReturnStmnt RCURL
     {   
@@ -314,10 +326,13 @@ ReturnStmnt:
     {
         if (strcmp(get_scope_type(outer_table, current_scope), "void") != 0)
         {
-
             printf("ERROR: function with return type has no return statement at line %d\n", lines); 
             exit(1);
         }
+
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ReturnStmnt;
+        $$->ReturnStmnt.id = NULL;
 
     }
     |
@@ -523,27 +538,24 @@ Stmnt:
             printf("PARSER: Recognized function call\n");
         }
     }
-    // |
-    // ID ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
-    // {
-    //     if (lookup_symbol(get_symbol_table(outer_table, current_scope), $1) == 0)
-    //     {
-    //         printf("ERROR: Used undeclared variable at line %d\n", lines);
-    //         exit(1);
-    //     }
+    |
+    ID LPAR RPAR SEMICOLON
+    {
+        if (lookup_scope(outer_table, $1) == 0)
+        {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
 
-    //     else if (lookup_scope(outer_table, $3) == 0)
-    //     {
-    //         printf("ERROR: Call to undefined function at line %d\n", lines);
-    //         exit(1);
-    //     }
-
-    //     else
-    //     {
-    //         malloc
-    //         printf("PARSER: Recognized variable assignment to function call\n");
-    //     }
-    // }
+        else
+        {
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_FunctionCall;
+            $$->FunctionCall.id = $1;
+            $$->FunctionCall.valueList = NULL;
+            printf("PARSER: Recognized function call\n");
+        }
+    }
     |
     ID LBRACKET INT RBRACKET ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
     {
@@ -660,8 +672,7 @@ Val:
         $$->SimpleString.value = strdup($1);
     }
 
-
-Expr: Expr ARITHMETIC_OPERATOR Expr Expr:
+Expr:
     Expr PLUS Expr {
         printf("PARSER: Recognized addition\n");
         $$ = malloc(sizeof(ASTNode));
@@ -812,6 +823,30 @@ Expr: Expr ARITHMETIC_OPERATOR Expr Expr:
         }
     }
     |
+    ID LPAR RPAR
+    {
+         if (lookup_scope(outer_table, $1) == 0)
+        {
+            printf("ERROR: Call to undefined function at line %d\n", lines);
+            exit(1);
+        }
+
+        else if(strcmp(get_scope_type(outer_table, $1), "void") == 0)
+        {
+            printf("ERROR: Function %s does not return a value\n", $1);
+            exit(1);
+        }
+
+        else
+        {
+            $$ = malloc(sizeof(ASTNode));
+            $$->type = NodeType_FunctionCall;
+            $$->FunctionCall.id = $1;
+            $$->FunctionCall.valueList = NULL;
+            printf("PARSER: Recognized function call\n");
+        }
+    }
+    |
     LPAR TYPE RPAR ID
     {
         $$ = malloc(sizeof(ASTNode));
@@ -849,10 +884,28 @@ int main() {
         fprintf(stderr, "Parsing failed\n");
     }
 
+   
+    
     print_ast(root, 0);
+    
+    //semantic and genrate TAC function called
+    printf("---Semantic Analysis---\n");
+    semanticAnalysis(root,outer_table);
+    print_table(outer_table);
+    printf("----Printing TAC----\n");
+    printTAC(tacHead);
+    printf("Writing TAC into TAC.ir\n");
+    printTACToFile("TAC.ir", tacHead);
+    if (tacHead == NULL) {
+    printf("Error: TAC head is NULL. No instructions to write.\n");
+    }else {
+
+    printf("Writing TAC into TAC.ir successful\n");
+    }
+    
     //Freeing the tree
     fclose(yyin);
-    //print_table(outer_table);
+    print_table(outer_table);
 
 
     

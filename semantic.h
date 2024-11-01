@@ -26,8 +26,8 @@ extern TAC* tacHead; // Global head of the TAC instructions list
 extern char* currentID;
 
 int allocateNextAvailableTempVar(int tempVars[]);
-void semanticAnalysis(ASTNode* node, SymbolTable* symTab);
-TAC* generateTACForExpr(ASTNode* expr, SymbolTable* symbol_table); //returns the TAC for the expression to print on console
+void semanticAnalysis(ASTNode* node, OuterSymbolTable* symTab);
+TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table); //returns the TAC for the expression to print on console
 char* createTempVar();
 //char* createOperand(ASTNode* node);
 char* createOperand(ASTNode* node, SymbolTable* symbol_table);
@@ -40,7 +40,15 @@ void printTACToFile(const char* filename, TAC* tac);
 // You can add more function declarations related to semantic analysis here
 TAC* generateTACForSimpleExpr(ASTNode* expr, SymbolTable* symbol_table);
 
+// Function prototypes for array declaration checks
+void check_array_not_redeclared(SymbolTable* table, const char* id, int line);
+void check_array_type(const char* type, int line);
+void check_array_size(int size, int line);
+void check_array_declaration(SymbolTable* table, const char* type, const char* id, int size, int line);
+
 //Trying TempVar Map
 void addTempVarMapping(char* key, char* tempVar);
 char* findTempVar(char* key);
+
+void def_outer_table_semantic(OuterSymbolTable* outer_table);
 #endif // SEMANTIC_H
