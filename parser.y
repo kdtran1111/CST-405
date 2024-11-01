@@ -133,12 +133,14 @@ StructDecl:
         printf("PARSER: recognized struct declaration\n");
     }
 
-VarDeclList:
+VarDeclList: 
+    
     {$$ = malloc(sizeof(ASTNode));
 		$$->type = NodeType_VarDeclList;
 		$$->VarDeclList.VarDecl = NULL;
 		$$->VarDeclList.VarDeclList = NULL;
     }
+    
     |
     VarDecl VarDeclList
     {
@@ -155,7 +157,7 @@ VarDecl:
     {
         printf("PARSER: Recognized %s array declaration: %s\n", $2, $3);
 
-        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $2) == 0)
+        if (lookup_symbol(get_symbol_table(outer_table, current_scope), $3) == 0)
         {
             $$ = malloc(sizeof(ASTNode));
 			$$->type = NodeType_VarDecl;
@@ -186,7 +188,7 @@ VarDecl:
         }
         else
         {
-            printf("ERROR ON LINE %d: ID %s has already been defined\n", lines, $2);
+            printf("ERROR ON LINE %d: Array with ID '%s' has already been defined\n", lines, $3);
 
             exit(0);
         }
@@ -465,6 +467,16 @@ Stmnt:
 		$$->Stmnt.id = strdup($1);
 		$$->Stmnt.op = strdup($2);
 		$$->Stmnt.Expr = $3;
+        // Lookup the variable type from the symbol table
+        Symbol* symbol = getSymbol(get_symbol_table(outer_table, current_scope), $1);
+        if (symbol) {
+            $$->Stmnt.expectedType = strdup(getSymbolType(symbol)); // Store the expected type in the ASTNode
+            printf("Expected type is: %s\n",getSymbolType(symbol) );
+
+        } else {
+            fprintf(stderr, "ERROR: Variable '%s' undeclared\n", $1);
+            exit(1);
+        }
         printf("PARSER Recognized Assignment Statement\n");
         
     }
@@ -472,6 +484,7 @@ Stmnt:
     ID ASSIGNMENT_OPERATOR Expr
     {
         fprintf(stderr, "PARSER_ERROR: Missing Semicolon at line %d\n", lines);
+        exit(1);
     }
     |
     WRITE ID SEMICOLON {
@@ -538,6 +551,7 @@ Stmnt:
             printf("PARSER: Recognized function call\n");
         }
     }
+
     |
     ID LPAR RPAR SEMICOLON
     {
@@ -556,6 +570,7 @@ Stmnt:
             printf("PARSER: Recognized function call\n");
         }
     }
+
     |
     ID LBRACKET INT RBRACKET ASSIGNMENT_OPERATOR ID LPAR ValueList RPAR SEMICOLON
     {
@@ -765,6 +780,14 @@ Expr:
         $$->SimpleFloat.value = $1;
     }
     |
+    |STRING
+    {
+        printf("PARSER: Recognized string expression: %s\n", $1);
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_SimpleString;
+        $$->SimpleString.value = $1;
+    }
+    |
     ID LBRACKET INT RBRACKET
     {
         printf("PARSER: Recognized array index expression: %s[$d]\n", $1, $3);
@@ -891,9 +914,12 @@ int main() {
     //semantic and genrate TAC function called
     printf("---Semantic Analysis---\n");
     semanticAnalysis(root,outer_table);
-    print_table(outer_table);
+
+    //print_table(outer_table);
     printf("----Printing TAC----\n");
     printTAC(tacHead);
+    print_table(outer_table);
+
     printf("Writing TAC into TAC.ir\n");
     printTACToFile("TAC.ir", tacHead);
     if (tacHead == NULL) {
