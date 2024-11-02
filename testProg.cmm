@@ -1,3 +1,24 @@
-int c;
-c = 10 + 9.5 / 8 + 6 - 8 * 5 -7;
+struct Cube
+{
+    int Xpos;
+    int Ypos;
+    int zPos;
+    string name;
+}
 
+
+func void testFunc (int param1, int param2)
+{
+    int d;
+    d = 10 * param1 + param2 / 10;
+}
+
+int c;
+int b; 
+arr int davidsArray[10];
+_Cube cubert;
+davidsArray[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 1};
+b = 2;
+c = 1;
+
+testFunc(c, b);

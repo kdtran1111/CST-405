@@ -1,8 +1,33 @@
-t0 = 9.500000 / 8
-t1 = 10 + t0
-t2 = t1 + 6
-t3 = 8 * 5
-t4 = t2 - t3
-t5 = 7 * 2
-t6 = t4 - t5
-t7 = t6 - 5
+.data
+cubert: .space 32
+davidsArray: .space 40
+
+.text
+
+.globl
+
+testFunc:
+t0 = 10 * a0
+t1 = a1 / 10
+t2 = t0 + t1
+jump end_func
+
+main:
+t3 = davidsArray
+t4 = cubert
+t3[0] = 1
+t3[1] = 2
+t3[2] = 3
+t3[3] = 4
+t3[4] = 5
+t3[5] = 6
+t3[6] = 7
+t3[7] = 8
+t3[8] = 9
+t3[9] = 1
+t5 = 2
+t6 = 1
+a0 = t6
+a1 = t5
+jump testFunc
+

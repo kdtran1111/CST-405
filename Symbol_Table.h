@@ -56,6 +56,7 @@ typedef struct Symbol{
     VarValue value;
     int size;
     char* tempVar;
+    char* temp; // to store the previous * or / in the complex expression
     char* type_str;
     char* id;
 }Symbol;
@@ -99,6 +100,7 @@ Symbol* get_struct_variable(SymbolTable* table, const char* struct_id, const cha
 // void free_table(SymbolTable* table);
 Symbol* getSymbol(SymbolTable* table, const char* key);
 char* getTempVar(Symbol* symbol);
+char* getSymbolType(Symbol* symbol);
 SymbolTable* get_symbol_table(OuterSymbolTable* outerTable, const char* scopeName);
 
 // Update Functions
@@ -106,6 +108,13 @@ void update_int_arr_value(SymbolTable* table, char* id, int index, int value);
 void update_float_arr_value(SymbolTable* table, char* id, int index, float value);
 void update_string_arr_value(SymbolTable* table, char* id, int index, char* value);
 void updateRegister(SymbolTable* table, const char* key, char* registerName);
+
+void updatetemp(SymbolTable* table, const char* key, char* registerName);
+//void updateValue(SymbolTable* table, const char* key, int new_value);
+void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type);
+//void updateValueFloat(SymbolTable* table, const char* key, int new_value);
+//void updateValueString(SymbolTable* table, const char* key, int new_value);
+
 void updateValueInt(SymbolTable* table, const char* key, int new_value);
 
 //Linked List Functions
@@ -120,6 +129,7 @@ LinkedListNode* get_arrays_in_scope(SymbolTable* table, OuterSymbolTable* outer_
 LinkedListNode* get_linked_list_tail(LinkedListNode* head);
 int get_struct_size(SymbolTable* table);
 void update_struct_variable_registers(SymbolTable* table, char* tempVar);
+
 
 // copy function
 SymbolTable* deep_copy_symbol_table(SymbolTable* original);
