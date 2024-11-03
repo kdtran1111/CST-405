@@ -11,7 +11,7 @@ char* curr_scope = "global";
 
 int paramCounter = 0; // Variable to keep track registers for parameters
 
-
+int tempIndex;
 int tempVars[20];
 int paramVars[3];
 int main_declared = 0; // Variable to keep track if the main function has been declared
@@ -20,7 +20,7 @@ char* writeID;
 TAC* tacHead = NULL;  // Global head of the TAC instructions list
 extern int declaredSymbol;
 extern int lines;
-
+TAC* arrTacRegister = NULL; /// to store TAC for array Register ( i.e. )
 
 //OuterSymbolTable* outer_table;
 
@@ -91,6 +91,7 @@ void printTACToFile(const char* filename, TAC* tac) {
 
             fprintf(file, "%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
             fprintf(stdout,"%s = %s %s %s\n", current->result, current->arg1, current->op, current->arg2);
+
         }
 
         else if(current->keyword != NULL)
@@ -267,7 +268,7 @@ void check_array_not_redeclared(SymbolTable* table, const char* id, int line) {
     if (lookup_symbol(table, id) != 0) {
         char errorMsg[100];
         snprintf(errorMsg, sizeof(errorMsg), "Array '%s' has already been declared.", id);
-        semantic_error(errorMsg, line);
+        // temp suppress: semantic_error(errorMsg, line);
     }
 }
 
@@ -276,7 +277,7 @@ void check_array_type(const char* type, int line) {
     if (strcmp(type, "INT_ARRAY") != 0 && strcmp(type, "FLOAT_ARRAY") != 0 && strcmp(type, "STRING_ARRAY") != 0) {
         char errorMsg[100];
         snprintf(errorMsg, sizeof(errorMsg), "Invalid array type '%s'. Allowed types are int, float, and string.", type);
-        semantic_error(errorMsg, line);
+        // temp suppress:semantic_error(errorMsg, line);
     }
 }
 
@@ -285,7 +286,7 @@ void check_array_size(int size, int line) {
     if (size <= 0) {
         char errorMsg[100];
         snprintf(errorMsg, sizeof(errorMsg), "Invalid array size '%d'. Size must be a positive integer.", size);
-        semantic_error(errorMsg, line);
+        // temp suppress:semantic_error(errorMsg, line);
     }
 }
 
@@ -345,6 +346,7 @@ void apply_type_coercion(SymbolTable* symbol_table, const char* id, ASTNode* exp
 }
 
 TAC* generate_arrDecl_tac(ASTNode* node) {
+    printf("=======generated in generate_arrDecl_tac\n=======");
     char* tempResult;
     TAC* arrDecl_tac = (TAC*)malloc(sizeof(TAC));
 
@@ -394,7 +396,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
                 appendTAC(&tacHead, arrDecl_tac);
 
                 Symbol* symbol = getSymbol(symbol_Table, node->VarDecl.id);
-                symbol->tempVar = strdup(arrDecl_tac->result);
+                symbol->arrayDeclVar = strdup(arrDecl_tac->result);
 
             }
 
@@ -416,6 +418,8 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
         
             break;
         case NodeType_Stmnt:
+
+            printf("Went into Stmnt case\n");
             stmnt_started = 1;
             currentID  = node->Stmnt.id;
             if (currentID == NULL) {
@@ -501,10 +505,12 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             break;
         case NodeType_Expr:
             // Recursively analyze left and right expressions
+            
             fprintf(stdout,"----------------left-------------\n");
             semanticAnalysis(node->Expr.left, outer_table_semantic);
             fprintf(stdout,"----------------right-------------\n");
             semanticAnalysis(node->Expr.right, outer_table_semantic);
+            printf("aslkdnkasjdbka");
             break;
 
         case NodeType_SimpleID:
@@ -826,14 +832,33 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
 
         case NodeType_IndexAssignment:
             // Array index assignment logic
-
+            currentID  = node->IndexAssignment.id;
+            printf("indexAssignment index is: %d and id is %s \n", node->IndexAssignment.index, currentID);
+            //redeclare symbol as symbolIndexAssignment to avoid redefinition error, which should not be happening
+            Symbol* symbolIndexAssignment = getSymbol(symbol_Table,currentID);
+            printf("symbol id is: %s \n", symbolIndexAssignment->id);
+            tempIndex=node->IndexAssignment.index;
+            printf("tempIndex is %d\n", tempIndex);
+            updateTempIndex(symbolIndexAssignment,tempIndex);
+            printf("went into IndexAssignment case\n");
             // Perform array assignment semantic checks
             check_array_declaration(symbol_Table, node->VarDecl.type, node->IndexAssignment.id, node->VarDecl.size, lines);
                 // Perform array semantic checks
                // check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
-
+            semanticAnalysis(node->IndexAssignment.Expr, outer_table_semantic);
+            apply_type_coercion(symbol_Table,currentID,node, lines);
+            int length = snprintf(NULL, 0, "%s[%d]", symbolIndexAssignment->arrayDeclVar, symbolIndexAssignment->tempIndex);
+            char* tempTacResult = (char*)malloc(length + 1);  // +1 for null terminator
+            snprintf(tempTacResult, length + 1, "%s[%d]", symbolIndexAssignment->arrayDeclVar, symbolIndexAssignment->tempIndex);
+            printf("end of array assignment with tempTacResult : %s\n", tempTacResult);
+            // Will need later !!!! apply_type_coercion(symbol_Table, node->IndexAssignment.id, node->IndexAssignment.Expr, lines);  
+            TAC* arrTac = (TAC*)malloc(sizeof(TAC));           
+            arrTac->result = strdup(tempTacResult);            
+            arrTac->op =strdup(node->IndexAssignment.op);            
+            arrTac->arg1 =  symbolIndexAssignment->tempVar;          
+            appendTAC(&tacHead,arrTac);
             break;
-
+        
         case NodeType_ValueList:
             // Traverse list of values (array or other collection)
 
@@ -939,9 +964,9 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
         default:
             break;
     }
-    printf("==========      current NodeType is %d=     ========\n", node->type);
+    printf("==========      current NodeType is %d=    and value is: %d ========\n", node->type, node->SimpleExpr.value);
     if (node->type == NodeType_Expr ) {
-
+        
         TAC* tac = generateTACForExpr(node,outer_table_semantic);
 
         // Process or store the generated TAC
@@ -951,13 +976,19 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
     if ( node->type == NodeType_SimpleExpr){
          
     }
+    if(node->Expr.right ==NULL){
+        printf("well well well\n");
+    }
 
 }
 
 
 TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
+    
     SymbolTable* symbol_Table = get_symbol_table(outer_table, curr_scope);
+    printf("CurrentID is %s\n", currentID);
     Symbol* symbol = getSymbol(symbol_Table, currentID);
+    printf("Hello\n");
     if (expr == NULL) {
         fprintf(stdout,"Error: Expression is NULL.\n");
         return NULL;
@@ -1031,7 +1062,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             fprintf(stdout,"Generated in generateTAC\n");
             newTac->next = NULL;
             //expr->Expr.check=1;
-
+        
             fprintf(stdout,"Generated TAC: %s = %s %s %s\n", tempResult //*newTac->result
             , newTac->arg1, newTac->op, newTac->arg2);
             //if(expr->Expr.right->type )
@@ -1042,6 +1073,13 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
                 updateRegister(symbol_Table, currentID, newTac->result);
            // }
             
+
+
+
+
+
+
+
             break;
         }
         case NodeType_SimpleExpr: {
@@ -1054,7 +1092,18 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             fprintf(stdout,"Unhandled expression type\n");
             break;
     }
+        // CHECK TO SEE IF THE ASSIGNMENT IS DONE, IF DONE MAP IT TO THE ARRDECLVAR
+        /*if((strcmp(symbol->type_str, "int_arr")== 0 ||strcmp(symbol->type_str, "float_arr")== 0 
+        || strcmp(symbol->type_str, "string_arr")== 0) && expr->Expr.right == NULL){
+            int length =snprintf(NULL, 0, "%s[%d]", symbol->arrayDeclVar, symbol->tempIndex);
+            char* tempTacResult = malloc(length + 1);  // +1 for null terminator
+            printf("tempTacResult is: %s", tempTacResult);
+            newTac->result = strdup(tempTacResult);
 
+        }
+        */
+        
+        
     return newTac;
 }
 

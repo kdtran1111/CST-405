@@ -504,6 +504,7 @@ Stmnt:
             $$->type = NodeType_IndexAssignment;
             $$->IndexAssignment.id = $1;
             $$->IndexAssignment.index = $3;
+            $$->IndexAssignment.op = $5;
             $$->IndexAssignment.Expr = $6;
         }
 
@@ -790,7 +791,7 @@ Expr:
     |
     ID LBRACKET INT RBRACKET
     {
-        printf("PARSER: Recognized array index expression: %s[$d]\n", $1, $3);
+        printf("PARSER: Recognized array index expression: %s[%d]\n", $1, $3);
         $$ = malloc(sizeof(ASTNode));
         $$->type = NodeType_SimpleArrIndex;
         $$->SimpleArrIndex.index = $3;

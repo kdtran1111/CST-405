@@ -588,8 +588,8 @@ void print_symbol_table(SymbolTable* table, int indent) {
         while (current != NULL) {
             // Print indent level
             for (int j = 0; j < indent; j++) printf(" ");
-            printf("Variable: %s, Type: %s, TempVar: %s, Size: %d, Value: ",
-                   current->var->id, current->var->type_str, current->var->tempVar, current->var->size);
+            printf("Variable: %s, Type: %s, TempVar: %s, Size: %d, arrayDeclVal: %s, tempIndex is: %d Value: ",
+                   current->var->id, current->var->type_str, current->var->tempVar, current->var->size, current->var->arrayDeclVar, current->var->tempIndex);
 
             // Print the value based on the type_string
             if (strcmp(current->var->type_str, "int") == 0) {
@@ -960,4 +960,15 @@ void updateValueInt(SymbolTable* table, const char* key, int new_value) {
     } else {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }
+}
+
+// Function to update tempIndex of a Symbol
+void updateTempIndex(Symbol* symbol, int tempIndex) {
+    if (symbol == NULL) {
+        fprintf(stderr, "Error: Symbol is NULL.\n");
+        return;
+    }
+    printf("hello\n");
+    symbol->tempIndex = tempIndex;
+    printf("Updated tempIndex to %d\n", symbol->tempIndex);
 }

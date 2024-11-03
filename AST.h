@@ -162,6 +162,7 @@ typedef struct ASTNode
         {
             char* id;
             int index;
+            char* op;
             struct ASTNode* Expr;
         }IndexAssignment;
 

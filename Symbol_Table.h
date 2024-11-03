@@ -56,6 +56,8 @@ typedef struct Symbol{
     VarValue value;
     int size;
     char* tempVar;
+    char* arrayDeclVar;
+    int tempIndex;
     char* temp; // to store the previous * or / in the complex expression
     char* type_str;
     char* id;
@@ -104,6 +106,7 @@ char* getSymbolType(Symbol* symbol);
 SymbolTable* get_symbol_table(OuterSymbolTable* outerTable, const char* scopeName);
 
 // Update Functions
+void updateTempIndex(Symbol* symbol, int tempIndex);
 void update_int_arr_value(SymbolTable* table, char* id, int index, int value);
 void update_float_arr_value(SymbolTable* table, char* id, int index, float value);
 void update_string_arr_value(SymbolTable* table, char* id, int index, char* value);
