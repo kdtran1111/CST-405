@@ -17,6 +17,11 @@ int paramVars[3];
 int main_declared = 0; // Variable to keep track if the main function has been declared
 char* currentID;
 char* writeID;
+char* structID;
+char* structMemberID;
+int structMemberAssignment = 0; // to keep track of if we are traversing the structMemberAssignment.
+Symbol* structMemberIDSymbol;
+Symbol* structIDSymbol;
 TAC* tacHead = NULL;  // Global head of the TAC instructions list
 extern int declaredSymbol;
 extern int lines;
@@ -583,7 +588,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             break;
 
 
-        case NodeType_program:
+        case NodeType_program: {
             // Create data section for arrays
             TAC* DataTac = (TAC*)malloc(sizeof(TAC));
             DataTac->keyword = strdup("data");
@@ -678,7 +683,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             semanticAnalysis(node->program.StmntList, outer_table_semantic);
             
             break;
-
+        }
         case NodeType_VarDeclList:
             semanticAnalysis(node->VarDeclList.VarDecl, outer_table_semantic);
             semanticAnalysis(node->VarDeclList.VarDeclList, outer_table_semantic);
@@ -770,7 +775,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             semanticAnalysis(node->ParamList.ParamList, outer_table_semantic);
             break;
 
-        case NodeType_Param:
+        case NodeType_Param: {
             Symbol* curr_symbol = getSymbol(symbol_Table, node->Param.id);
             if (symbol != NULL) 
             {
@@ -897,10 +902,25 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
 
             break;
 
-        case NodeType_StructMemberAssignment:
+        case NodeType_StructMemberAssignment:{
             // Struct member assignment logic
-            break;
+            structMemberAssignment = 1;
+            printf("went into Nodetype structmemberassignment \n");
+            structID = node->StructMemberAssignment.id;
+            
+            structMemberID =node->StructMemberAssignment.member_id;
+            printf("2\n");
 
+            structIDSymbol = getSymbol(symbol_Table,structID);
+            printf(" StructUDSymbol ID is: %s \n", structIDSymbol->id);
+            structMemberIDSymbol = getSymbol(structIDSymbol->value.structValue,structMemberID);
+            printf("structmemberidsymbol ID is:  %s ", structMemberIDSymbol->id);
+            
+            semanticAnalysis(node->StructMemberAssignment.Expr, outer_table_semantic);
+            printf("2\n");
+            structMemberAssignment = 0;
+            break;
+        }
         case NodeType_FunctionCall:
        
             printf("Function call: %s\n", node->FunctionCall.id);
@@ -955,7 +975,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             }
             stmnt_started = 0;
             break;
-
+        }
         case NodeType_TypeCast:
             // Type casting logic
 
@@ -964,7 +984,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
         default:
             break;
     }
-    printf("==========      current NodeType is %d=    and value is: %d ========\n", node->type, node->SimpleExpr.value);
+     printf("==========      current NodeType is %d=    and value is: %d ========\n", node->type, node->SimpleExpr.value);
     if (node->type == NodeType_Expr ) {
         
         TAC* tac = generateTACForExpr(node,outer_table_semantic);
@@ -981,6 +1001,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
     }
 
 }
+
 
 
 TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
@@ -1133,6 +1154,12 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
             break;
         case NodeType_SimpleFloat: { // New case for SimpleFloat
             snprintf(operand, 32, "%f", node->SimpleFloat.value);
+            break;
+        }
+        case NodeType_SimpleStructMember:
+        {   
+            char* tempStructRegister;
+
             break;
         }
         default:
@@ -1333,10 +1360,11 @@ void generate_array_assign_tac(ASTNode* node, SymbolTable* symbol_table)
 
             else
             {
+                printf("12345\n");
                 char result[10];
                 char* str = (char*)malloc(10 * sizeof(char));
                 snprintf(str, 10, "%d", node->SimpleExpr.value);
-                sprintf(result, "%s[%d]", symbol->tempVar, array_counter); 
+                sprintf(result, "%s[%d]", symbol->arrayDeclVar, array_counter); 
                 
                 TAC* newTac = (TAC*)malloc(sizeof(TAC));
                 newTac->keyword = strdup("array_assign");
@@ -1365,7 +1393,7 @@ void generate_array_assign_tac(ASTNode* node, SymbolTable* symbol_table)
             else
             {
                 char result[10];
-                snprintf(result, 10, "%s[%d]", symbol->tempVar, array_counter);
+                snprintf(result, 10, "%s[%d]", symbol->arrayDeclVar, array_counter);
 
                 TAC* newTac = (TAC*)malloc(sizeof(TAC));
                 newTac->keyword = strdup("array_assign");
@@ -1390,7 +1418,7 @@ void generate_array_assign_tac(ASTNode* node, SymbolTable* symbol_table)
                 char result[10];
                 char* str = (char*)malloc(20 * sizeof(char));
                 snprintf(str, 20, "%f", node->SimpleFloat.value);
-                sprintf(result, "%s[%d]", symbol->tempVar, array_counter); 
+                sprintf(result, "%s[%d]", symbol->arrayDeclVar, array_counter); 
                 
                 TAC* newTac = (TAC*)malloc(sizeof(TAC));
                 newTac->keyword = strdup("array_assign");

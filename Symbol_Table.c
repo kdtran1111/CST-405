@@ -859,7 +859,17 @@ void updatetemp(SymbolTable* table, const char* key, char* registerName) {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }
 }
+void updatetempVarStruct(SymbolTable* table, const char* key, char* registerName) {
+    Symbol* symbol = getSymbol(table, key);
+    if (symbol != NULL) {
+        symbol->tempVarStruct = registerName;
+        print_symbol_table(table, 0);
 
+
+    } else {
+        printf("ERROR: Symbol %s not found in the symbol table\n", key);
+    }
+}
 // Function to return the symbol table for a given scope
 SymbolTable* get_symbol_table(OuterSymbolTable* outerTable, const char* scopeName) {
     // Find the correct scope in the outer hash table

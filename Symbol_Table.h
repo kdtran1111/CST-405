@@ -56,6 +56,7 @@ typedef struct Symbol{
     VarValue value;
     int size;
     char* tempVar;
+    char* tempVarStruct; // to help with generate EXPR, supposed to be named as tempVar but dont want to change anything
     char* arrayDeclVar;
     int tempIndex;
     char* temp; // to store the previous * or / in the complex expression
