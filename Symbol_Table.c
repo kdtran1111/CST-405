@@ -848,6 +848,17 @@ void updateRegister(SymbolTable* table, const char* key, char* registerName) {
         printf("ERROR: Symbol %s not found in the symbol table\n", key);
     }
 }
+void updateRegisterStruct(SymbolTable* table, const char* key, char* registerName) {
+    Symbol* symbol = getSymbol(table, key);
+    if (symbol != NULL) {
+        symbol->tempVarStruct = registerName;
+        print_symbol_table(table, 0);
+
+
+    } else {
+        printf("ERROR: Symbol %s not found in the symbol table\n", key);
+    }
+}
 void updatetemp(SymbolTable* table, const char* key, char* registerName) {
     Symbol* symbol = getSymbol(table, key);
     if (symbol != NULL) {

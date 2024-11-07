@@ -112,7 +112,7 @@ void update_int_arr_value(SymbolTable* table, char* id, int index, int value);
 void update_float_arr_value(SymbolTable* table, char* id, int index, float value);
 void update_string_arr_value(SymbolTable* table, char* id, int index, char* value);
 void updateRegister(SymbolTable* table, const char* key, char* registerName);
-
+void updateRegisterStruct(SymbolTable* table, const char* key, char* registerName);
 void updatetemp(SymbolTable* table, const char* key, char* registerName);
 //void updateValue(SymbolTable* table, const char* key, int new_value);
 void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type);
