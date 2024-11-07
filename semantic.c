@@ -449,7 +449,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             // Check for type consistency and initialization
             check_type_consistency(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
 
-            apply_type_coercion(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
+            //apply_type_coercion(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
   
             
           
@@ -851,7 +851,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
                 // Perform array semantic checks
                // check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
             semanticAnalysis(node->IndexAssignment.Expr, outer_table_semantic);
-            apply_type_coercion(symbol_Table,currentID,node, lines);
+            //apply_type_coercion(symbol_Table,currentID,node, lines);
             int length = snprintf(NULL, 0, "%s[%d]", symbolIndexAssignment->arrayDeclVar, symbolIndexAssignment->tempIndex);
             char* tempTacResult = (char*)malloc(length + 1);  // +1 for null terminator
             snprintf(tempTacResult, length + 1, "%s[%d]", symbolIndexAssignment->arrayDeclVar, symbolIndexAssignment->tempIndex);
@@ -986,7 +986,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
     }
      printf("==========      current NodeType is %d=    and value is: %d ========\n", node->type, node->SimpleExpr.value);
     if (node->type == NodeType_Expr ) {
-        
+        apply_type_coercion(symbol_Table,currentID,node, lines);
         TAC* tac = generateTACForExpr(node,outer_table_semantic);
 
         // Process or store the generated TAC
@@ -1131,7 +1131,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
 
 char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
     char* operand = (char*)malloc(32 * sizeof(char));
-    
+    Symbol* symbol = getSymbol(symbol_table, currentID);
     switch (node->type) {
         case NodeType_SimpleID: {
             Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id); //------
@@ -1150,10 +1150,22 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
             break;
         }
         case NodeType_SimpleExpr:
-            snprintf(operand, 32, "%d", node->SimpleExpr.value);
+            
+            if (strcmp(symbol->type_str, "float_array")==0 || strcmp(symbol->type_str, "float") ==0) {
+            
+            snprintf(operand, 32, "%f", (float)node->SimpleExpr.value);
+            } else {
+                snprintf(operand, 32, "%d", node->SimpleExpr.value);
+            }
             break;
         case NodeType_SimpleFloat: { // New case for SimpleFloat
-            snprintf(operand, 32, "%f", node->SimpleFloat.value);
+            if (strcmp(symbol->type_str, "int_array")==0 || strcmp(symbol->type_str, "int") ==0) {
+        
+            snprintf(operand, 32, "%d", (int)node->SimpleFloat.value);
+            } else {
+                snprintf(operand, 32, "%f", node->SimpleFloat.value);
+            }
+            //snprintf(operand, 32, "%f", node->SimpleFloat.value);
             break;
         }
         case NodeType_SimpleStructMember:
@@ -1465,4 +1477,3 @@ char* createTempVar() {
     return tempVar;
 
 }
-
