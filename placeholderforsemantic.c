@@ -447,9 +447,9 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             semanticAnalysis(node->Stmnt.Expr, outer_table_semantic);        // Analyze the expression on the right-hand side
             fprintf(stdout, "HERERE\n"); 
             // Check for type consistency and initialization
-            //check_type_consistency(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
+            check_type_consistency(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
 
-            //apply_type_coercion(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
+            apply_type_coercion(symbol_Table, node->Stmnt.id, node->Stmnt.Expr, lines);
   
             
           
@@ -463,9 +463,6 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             VarType varType;
 
             char buffer[20];
-
-
-            
             if (node->Stmnt.Expr->type == NodeType_SimpleFloat) {
             varType = TYPE_FLOAT;
             printf("DEBUG: Node type is SimpleFloat. Value: %f\n", node->Stmnt.Expr->SimpleFloat.value);
@@ -489,27 +486,17 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             }
 
             // Call the new updateValue function
-            
             updateValue(symbol_Table, currentID, newValue, varType);
             fprintf(stdout, "updateValue has no problem\n");  
             fprintf(stdout, "Generating TAC for simple expression\n");                
             // Generate TAC
-            
-
-
-            if (strcmp(symbol->type_str, "int") ==0 && varType == TYPE_FLOAT) {
-                snprintf(buffer, 20, "%d", (int)newValue.floatValue);
-            }else if (strcmp(symbol->type_str, "int") ==0 && varType == TYPE_INT) {
-                snprintf(buffer, 20, "%d", newValue.intValue);
-
-            } else if (strcmp(symbol->type_str, "float") ==0 && varType == TYPE_FLOAT) {
+            if (varType == TYPE_FLOAT) {
                 snprintf(buffer, 20, "%f", newValue.floatValue);
-            }else if (strcmp(symbol->type_str, "float") ==0 && varType == TYPE_INT) {
-                snprintf(buffer, 20, "%f", (float)newValue.intValue);   
+            }else if (varType == TYPE_INT) {
+                snprintf(buffer, 20, "%d", newValue.intValue);
             }else if(varType == TYPE_STRING){
                 snprintf(buffer, 20, "%s", newValue.stringValue);
             }
-
             newTac->arg1 = strdup(buffer);  // Literal value
             newTac->op = "=";               // Assignment operator
             newTac->arg2 = NULL;
@@ -741,9 +728,6 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
 
         case NodeType_SimpleArrIndex:
             // Array indexing logic, such as bounds checking
-
-
-
             break;
 
         case NodeType_SimpleStructMember:
@@ -867,7 +851,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
                 // Perform array semantic checks
                // check_array_declaration(symbol_Table, node->VarDecl.type, node->VarDecl.id, node->VarDecl.size, lines);
             semanticAnalysis(node->IndexAssignment.Expr, outer_table_semantic);
-            //apply_type_coercion(symbol_Table,currentID,node, lines);
+            apply_type_coercion(symbol_Table,currentID,node, lines);
             int length = snprintf(NULL, 0, "%s[%d]", symbolIndexAssignment->arrayDeclVar, symbolIndexAssignment->tempIndex);
             char* tempTacResult = (char*)malloc(length + 1);  // +1 for null terminator
             snprintf(tempTacResult, length + 1, "%s[%d]", symbolIndexAssignment->arrayDeclVar, symbolIndexAssignment->tempIndex);
@@ -935,11 +919,6 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             semanticAnalysis(node->StructMemberAssignment.Expr, outer_table_semantic);
             printf("3\n");
             structMemberAssignment = 0;
-            TAC* structTAC = (TAC*)malloc(sizeof(TAC));  
-            structTAC->result = strdup(structMemberIDSymbol->tempVar);
-            structTAC->op=strdup("=");
-            structTAC->arg1 = structMemberIDSymbol->tempVarStruct;
-            appendTAC(&tacHead,structTAC);
             break;
         }
         case NodeType_FunctionCall:
@@ -1005,9 +984,9 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
         default:
             break;
     }
-    printf("==========      current NodeType is %d=    and value is: %d ========\n", node->type, node->SimpleExpr.value);
-    if (node->type == NodeType_Expr ) {
-        //apply_type_coercion(symbol_Table,currentID,node, lines);
+    printf("==========      current NodeType is %d=    and value is: %d ======== and structAssignment is %d\n", node->type, node->SimpleExpr.value, structMemberAssignment);
+    if (node->type == NodeType_Expr  || node->type== NodeType_SimpleExpr){//&& structMemberAssignment == 0) {
+        
         TAC* tac = generateTACForExpr(node,outer_table_semantic);
 
         // Process or store the generated TAC
@@ -1015,28 +994,26 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
         appendTAC(&tacHead,tac);
     }
     if ( node->type == NodeType_SimpleExpr){
-       
+         
     }
     if(node->Expr.right ==NULL){
-        printf("well well well\n");
+        
     }
-
+    
 }
 
 
 TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
-    
     SymbolTable* symbol_Table = get_symbol_table(outer_table, curr_scope);
     TAC* newTac = (TAC*)malloc(sizeof(TAC));
     char* tempResult;
     char* temp; // to store the result of expression before next * or /
-   
+    printf("strucmemberAssignment is; %d, memberId: %s, structID: %s\n", structMemberAssignment,structMemberIDSymbol->id, structID);
     
    
    
    
     if (structMemberAssignment !=0 ){
-            printf("strucmemberAssignment is; %d, memberId: %s, structID: %s\n", structMemberAssignment,structMemberIDSymbol->id, structID);
             printf("well well well\n");
             //SymbolTable* symbol_Table = get_symbol_table(outer_table, curr_scope);
             currentID = structMemberID;
@@ -1056,7 +1033,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             
             switch (expr->type) {
                 case NodeType_Expr: {
-                    fprintf(stdout,"Generating TAC for expression in If\n");
+                    fprintf(stdout,"Generating TAC for expression\n");
                     if(structMemberIDSymbol->tempVarStruct!=NULL){
                     tempResult= strdup(structMemberIDSymbol->tempVarStruct);
                     }
@@ -1080,13 +1057,13 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
                     
                     // Reuse temp vars for operands (x and y)
                     if (structMemberIDSymbol->tempVarStruct==NULL ){//&& structMemberIDSymbol->tempVarStruct!=tempResult){
-                    fprintf(stdout, "111\n");
-                    newTac->arg1 = createOperand(expr->Expr.left, structIDSymbol->value.structValue);  // Left operand (e.g., t0 for x)
+                    fprintf(stdout, "1\n");
+                    newTac->arg1 = createOperand(expr->Expr.left, symbol_Table);  // Left operand (e.g., t0 for x)
                     fprintf(stdout, "newTac->arg1 is:  %s\n", newTac->arg1);// DEbug
                     fprintf(stdout, "TempResult is: %s\n", tempResult);// DEbug
                     } else if (structMemberIDSymbol->tempVarStruct!=NULL && expr->Expr.left->type != NodeType_Expr ){
                         fprintf(stdout, "2\n");
-                        newTac->arg1 = createOperand(expr->Expr.left, structIDSymbol->value.structValue);  // Left operand (e.g., t0 for x)
+                        newTac->arg1 = createOperand(expr->Expr.left, symbol_Table);  // Left operand (e.g., t0 for x)
                         fprintf(stdout, "newTac->arg1 is:  %s in else if \n", newTac->arg1);// DEbug
                     } else if (structMemberIDSymbol->tempVarStruct!=NULL && expr->Expr.right->type != NodeType_Expr ){
                         fprintf(stdout, "3\n");
@@ -1101,7 +1078,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
                         fprintf(stdout, "5\n");
                         if(expr->Expr.right != NULL && expr->Expr.right->type!=NodeType_Expr){
                             fprintf(stdout, "6\n");
-                            newTac->arg2 = createOperand(expr->Expr.right, structIDSymbol->value.structValue); // Right operand (e.g., t1 for y)
+                            newTac->arg2 = createOperand(expr->Expr.right, symbol_Table); // Right operand (e.g., t1 for y)
                             fprintf(stdout, "newTac->arg2 is:  %s in if Expr.right!=NULL \n", newTac->arg2);// DEbug
                         } else {
                             fprintf(stdout, "7\n");
@@ -1110,17 +1087,10 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
                             fprintf(stdout, "newTac->arg2 is:  %s in the else \n", newTac->arg2);// DEbug  
                         }
 
-                    } else if (strcmp(newTac->result, tempResult) > 0 && ( strcmp(expr->Expr.op, "*") ==0 ) || strcmp(expr->Expr.op, "/") ==0){
+                    } else if (strcmp(newTac->result, tempResult) >0){
                         fprintf(stdout, "8\n");
-                        newTac->arg2 = createOperand(expr->Expr.right, structIDSymbol->value.structValue);
-                    } else {
-                        fprintf(stdout, "9\n");
-                        if (expr->Expr.right->Expr.right ==NULL){
-                        newTac->arg2 = createOperand(expr->Expr.right, structIDSymbol->value.structValue);
-                        }else{
                         newTac->arg2=tempResult;
                         fprintf(stdout,"tempResult is larger than result\n");
-                        }
                     }
                     
 
@@ -1146,35 +1116,22 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
                     //  printf("generate in the else\n");
                         updateRegisterStruct(structIDSymbol->value.structValue, currentID, newTac->result);
                 // }
-           
+                    
+
+
+
+
+
+
+
                     break;
                 }
                 case NodeType_SimpleExpr: {
-                    printf("Kevin\n");
-                    newTac->result= createTempVar();
-                    newTac->arg1 = createOperand(expr,symbol_Table);
-                    updateRegisterStruct(structIDSymbol->value.structValue, currentID, newTac->result);
+                
                     break;
                 
                 }
-                case NodeType_SimpleFloat: {
-                    newTac->result= createTempVar();
-                    newTac->arg1 = createOperand(expr,symbol_Table);
-                    updateRegisterStruct(structIDSymbol->value.structValue, currentID, newTac->result);
-                    break;
-                
-                }
-                
-                case NodeType_SimpleString: {
-                    newTac->result= createTempVar();
-                    newTac->arg1 = createOperand(expr,symbol_Table);
-                    updateRegisterStruct(structIDSymbol->value.structValue, currentID, newTac->result);
-                    break;              
-                }
-                case NodeType_SimpleArrIndex:
 
-
-                    break;
                 default:
                     fprintf(stdout,"Unhandled expression type\n");
                     break;
@@ -1194,22 +1151,24 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
         
     } else {
 
-    SymbolTable* symbol_Table = get_symbol_table(outer_table, curr_scope);
+
+    //SymbolTable* symbol_Table = get_symbol_table(outer_table, curr_scope);
     printf("CurrentID is %s\n", currentID);
     Symbol* symbol = getSymbol(symbol_Table, currentID);
     printf("Hello\n");
+    
     if (expr == NULL) {
         fprintf(stdout,"Error: Expression is NULL.\n");
         return NULL;
     }
-    char* tempResult;
-    char* temp; // to store the result of expression before next * or /
-    //TAC* newTac = (TAC*)malloc(sizeof(TAC));
+    ///char* tempResult;
+    //char* temp; // to store the result of expression before next * or /
+    
     if (!newTac) return NULL;
     
     switch (expr->type) {
         case NodeType_Expr: {
-            fprintf(stdout,"Generating TAC for expression in Else\n");
+            fprintf(stdout,"Generating TAC for expression\n");
             if(symbol->tempVar!=NULL){
             tempResult= strdup(symbol->tempVar);
             }
@@ -1272,7 +1231,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             newTac->next = NULL;
             //expr->Expr.check=1;
         
-            fprintf(stdout,"Generated TAC: %s = %s %s %s\n", newTac->result //*newTac->result
+            fprintf(stdout,"Generated TAC: %s = %s %s %s\n", tempResult //*newTac->result
             , newTac->arg1, newTac->op, newTac->arg2);
             //if(expr->Expr.right->type )
             //if ((strcmp(expr->Expr.op, "*") == 0 || strcmp(expr->Expr.op, "/") == 0) && symbol->tempVar != NULL ){
@@ -1291,28 +1250,11 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
 
             break;
         }
-       case NodeType_SimpleExpr: {
-            printf("Kevin\n");
-            newTac->result= createTempVar();
-            newTac->arg1 = createOperand(expr,symbol_Table);
-            updateRegister(symbol_Table, currentID, newTac->result);
+        case NodeType_SimpleExpr: {
+         
             break;
-                
-            }
-        case NodeType_SimpleFloat: {
-            newTac->result= createTempVar();
-            newTac->arg1 = createOperand(expr,symbol_Table);
-            updateRegister(symbol_Table, currentID, newTac->result);
-            break;
-                
-            }
-                
-        case NodeType_SimpleString: {
-            newTac->result= createTempVar();
-            newTac->arg1 = createOperand(expr,symbol_Table);
-            updateRegister(symbol_Table, currentID, newTac->result);
-            break;              
-            }
+        
+        }
 
         default:
             fprintf(stdout,"Unhandled expression type\n");
@@ -1329,8 +1271,6 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
         }
         */
         
-        
-        
     }    
     return newTac;
 }
@@ -1338,7 +1278,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
 
 char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
     char* operand = (char*)malloc(32 * sizeof(char));
-    Symbol* symbol = getSymbol(symbol_table, currentID);
+    
     switch (node->type) {
         case NodeType_SimpleID: {
             Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id); //------
@@ -1357,39 +1297,18 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
             break;
         }
         case NodeType_SimpleExpr:
-            
-            if (strcmp(symbol->type_str, "float_array")==0 || strcmp(symbol->type_str, "float") ==0) {
-            printf("1\n");
-            snprintf(operand, 32, "%f", (float)node->SimpleExpr.value);
-            } else {
-                printf("2\n");
-                snprintf(operand, 32, "%d", node->SimpleExpr.value);
-            }
+            snprintf(operand, 32, "%d", node->SimpleExpr.value);
             break;
         case NodeType_SimpleFloat: { // New case for SimpleFloat
-            if (strcmp(symbol->type_str, "int_array")==0 || strcmp(symbol->type_str, "int") ==0) {
-                printf("3\n");
-            snprintf(operand, 32, "%d", (int)node->SimpleFloat.value);
-            } else {
-                printf("4\n");
-                snprintf(operand, 32, "%f", node->SimpleFloat.value);
-            }
-            //snprintf(operand, 32, "%f", node->SimpleFloat.value);
+            snprintf(operand, 32, "%f", node->SimpleFloat.value);
             break;
         }
         case NodeType_SimpleStructMember:
         {   
             char* tempStructRegister;
-            snprintf(operand, 32, "%s", structMemberIDSymbol->tempVar);
 
             break;
         }
-        case NodeType_SimpleArrIndex:
-            
-            snprintf(operand, 32, "%s[%d]", symbol->arrayDeclVar,node->SimpleArrIndex.index);
-            
-            break;
-
         default:
             strcpy(operand, "");
             break;
