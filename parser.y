@@ -16,7 +16,7 @@ OuterSymbolTable* outer_table;
 char* current_scope = "global";
 SymbolTable* current_table;
 ASTNode* root;
-
+int in_switch = 0;
 void yyerror(const char* s) {
     fprintf(stderr, "Parse error: %s\n", s);
     fflush(stderr); // Flush stderr to ensure error messages are printed
@@ -34,6 +34,23 @@ void yyerror(const char* s) {
 
 /* Define token types */
 %token <string> KEYWORD
+%token <string> IF
+%token <string> ELSE
+%token <string> ELIF
+%token <string> OR
+%token <string> AND
+%token <string> DEFAULT
+%token <char> COLON
+%token <char> LESS_THAN
+%token <char> GREATER_THAN
+%token <string> NOT_EQUAL
+%token <string> CASE
+%token <string> SWITCH
+%token <string> BREAK
+%token <char> NOT
+%token <string> GREATER_EQUAL
+%token <string> LESS_EQUAL
+%token <string> EQUAL_EQUAL
 %token <char> UNDERSCORE
 %token <char> DOT
 %token <string> STRUCT
@@ -71,7 +88,8 @@ void yyerror(const char* s) {
 %nonassoc LPAR RPAR
 
 %printer { fprintf(yyoutput, "%s", $$); } ID;
-%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val StructDeclList StructDecl
+%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val StructDeclList StructDecl ConditionList Condition ElseStmnt ElseIfList ElseIfStmnt CaseStmnt CaseList Case Default
+%type <string> ComparisonOperator
 %%
 
 program:
@@ -447,7 +465,8 @@ Param:
     }
 
 
-StmntList:{/* emoty/do nothing*/}
+StmntList:
+    {$$ = NULL;}
     |
     Stmnt StmntList
     {
@@ -458,7 +477,198 @@ StmntList:{/* emoty/do nothing*/}
         printf("PARSER: Recognized Statement List\n");
     }
 
+
+ElseStmnt:
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ElseStmnt;
+        $$->ElseStmnt.StmntList = NULL;
+        printf("PARSER: Recgonized Else Statement\n");
+    }
+    |
+    ELSE LCURL StmntList RCURL
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ElseStmnt;
+        $$->ElseStmnt.StmntList = $3;
+        printf("PARSER: Recgonized Else Statement\n");
+    }
+
+ElseIfList:
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ElseIfList;
+        $$->ElseIfList.ElseIfStmnt = NULL;
+        $$->ElseIfList.ElseIfList = NULL;
+    }
+    |
+    ElseIfStmnt ElseIfList
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ElseIfList;
+        $$->ElseIfList.ElseIfStmnt = $1;
+        $$->ElseIfList.ElseIfList = $2;
+    }
+
+ElseIfStmnt:
+    {}
+    |
+    ELIF LPAR ConditionList RPAR LCURL StmntList RCURL
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ElseIfStmnt;
+        $$->ElseIfStmnt.ConditionList = $3;
+        $$->ElseIfStmnt.StmntList = $6;
+        printf("PARSER: Recoginzed Else If statement\n");
+    }
+
+ConditionList:
+    {
+        // Throw error if empty
+        printf("ERROR: Empty Condition on line %d\n", lines);
+        exit(1);
+    }
+    |
+    Condition
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ConditionList;
+        $$->ConditionList.Condition = $1;
+        $$->ConditionList.ConditionList = NULL;
+        $$->ConditionList.BoolOperator = NULL;
+        printf("PARSER: Recognized condition list\n");
+    }
+    |
+    Condition AND ConditionList
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ConditionList;
+        $$->ConditionList.Condition = $1;
+        $$->ConditionList.ConditionList = $3;
+        $$->ConditionList.BoolOperator = strdup("AND");
+        printf("PARSER: Recognized AND condition\n");
+    }
+    |
+    Condition OR ConditionList
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_ConditionList;
+        $$->ConditionList.Condition = $1;
+        $$->ConditionList.ConditionList = $3;
+        $$->ConditionList.BoolOperator = strdup("OR");
+        printf("PARSER: Recognized OR condition\n");
+    }
+
+Condition:
+    Val ComparisonOperator Val
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_Condition;
+        $$->Condition.LeftVal = $1;
+        $$->Condition.ComparisonOperator = $2;
+        $$->Condition.RightVal = $3;
+        printf("PARSER: Recognized condition\n");
+    }
+
+ComparisonOperator:
+    {
+        printf("ERROR: Missing comparison operator on line %d \n", lines);
+        exit(1);
+    }
+    |
+    LESS_THAN
+    {
+        $$ = strdup("<");
+    }
+    |
+    GREATER_THAN
+    {
+        $$ = strdup(">");
+    }
+    |
+    NOT_EQUAL
+    {
+        $$ = strdup($1);
+    }
+    |
+    GREATER_EQUAL
+    {
+        $$ = strdup($1);
+    }
+    |
+    LESS_EQUAL
+    {
+        $$ = strdup($1);
+    }
+    |
+    EQUAL_EQUAL
+    {
+        $$ = strdup($1);
+    }
+
+
+CaseList:
+    {
+        $$ = NULL;
+    }
+    |
+    Case CaseList
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_CaseList;
+        $$->CaseList.CaseStmnt = $1;
+        $$->CaseList.CaseList = $2;
+    }
+
+Case:
+    CASE Val COLON LCURL StmntList BREAK SEMICOLON RCURL
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_CaseStmnt;
+        $$->CaseStmnt.Val = $2;
+        $$->CaseStmnt.StmntList = $5;
+        printf("PARSER: Recognized Case statement\n");
+    }
+
+
+Default:
+    {
+
+    }
+    |
+    DEFAULT COLON LCURL StmntList BREAK SEMICOLON RCURL
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_DefaultCase;
+        $$->DefaultCase.StmntList = $4;
+        printf("PARSER: Recognized Default statement\n");
+    }
+
+
+
 Stmnt:
+
+    SWITCH {in_switch = 1;} LPAR Expr {in_switch = 0;} RPAR LCURL CaseList Default RCURL
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_SwitchStmnt;
+        $$->SwitchStmnt.Expr = $4;
+        $$->SwitchStmnt.CaseList = $8;
+        $$->SwitchStmnt.DefaultCase = $9;
+        printf("PARSER: Recognized switch statement\n");
+    }
+    |
+    IF LPAR ConditionList RPAR LCURL StmntList RCURL ElseIfList ElseStmnt
+    {
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_IfStmnt;
+        $$->IfStmnt.ConditionList = $3;
+        $$->IfStmnt.StmntList = $6;
+        $$->IfStmnt.ElseIfList = $8;
+        $$->IfStmnt.ElseStmnt = $9;
+        printf("PARSER: Recognized IF statement\n");
+    }
+    |
     ID ASSIGNMENT_OPERATOR Expr SEMICOLON
     {
         printf("PARSERAOKFNOEIFWEOFINEWO: %s\n", $2);
@@ -662,6 +872,11 @@ ValueListNonEmpty:
 Val:
     ID
     {
+        if(in_switch == 1)
+        {
+            printf("ERROR: Nonconstant variable in switch at line %d\n", lines);
+            exit(1);
+        }
         $$ = malloc(sizeof(ASTNode));
         $$->type = NodeType_SimpleID;
         $$->SimpleID.id = strdup($1);

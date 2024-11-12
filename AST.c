@@ -22,14 +22,13 @@ void print_ast(ASTNode* node, int indent)
             break;
 
         case NodeType_VarDeclList:
-            printf("Var Decl List:\n");
+            printf("Variable Declaration List:\n");
             print_ast(node->VarDeclList.VarDecl, indent + 1);
             print_ast(node->VarDeclList.VarDeclList, indent + 1);
             break;
 
         case NodeType_VarDecl:
-            printf("Var Decl: Type = %s, ID = %s, size = %d\n", node->VarDecl.type, node->VarDecl.id, node->VarDecl.size);
-            
+            printf("Variable Declaration: Type = %s, ID = %s, Size = %d\n", node->VarDecl.type, node->VarDecl.id, node->VarDecl.size);
             break;
 
         case NodeType_StmntList:
@@ -39,18 +38,18 @@ void print_ast(ASTNode* node, int indent)
             break;
 
         case NodeType_Stmnt:
-            printf("Assign Statement: ID = %s, Operator = %s\n", node->Stmnt.id, node->Stmnt.op);
+            printf("Assignment Statement: ID = %s, Operator = %s\n", node->Stmnt.id, node->Stmnt.op);
             print_ast(node->Stmnt.Expr, indent + 1);
             break;
             
         case NodeType_FuncDeclList:
-            printf("Func Decl List:\n");
+            printf("Function Declaration List:\n");
             print_ast(node->FuncDeclList.FuncDecl, indent + 1);
             print_ast(node->FuncDeclList.FuncDeclList, indent + 1);
             break;
 
         case NodeType_FuncDecl:
-            printf("Func Decl: Type = %s, ID = %s\n", node->FuncDecl.type, node->FuncDecl.id);
+            printf("Function Declaration: Type = %s, ID = %s\n", node->FuncDecl.type, node->FuncDecl.id);
             print_ast(node->FuncDecl.ParamList, indent + 1);
             print_ast(node->FuncDecl.VarDeclList, indent + 1);
             print_ast(node->FuncDecl.StmntList, indent + 1);
@@ -58,13 +57,13 @@ void print_ast(ASTNode* node, int indent)
             break;
 
         case NodeType_ParamList:
-            printf("Param List:\n");
+            printf("Parameter List:\n");
             print_ast(node->ParamList.Param, indent + 1);
             print_ast(node->ParamList.ParamList, indent + 1);
             break;
 
         case NodeType_Param:
-            printf("Param: Type = %s, ID = %s\n", node->Param.type, node->Param.id);
+            printf("Parameter: Type = %s, ID = %s\n", node->Param.type, node->Param.id);
             break;
 
         case NodeType_ReturnStmnt:
@@ -88,7 +87,7 @@ void print_ast(ASTNode* node, int indent)
         
         case NodeType_ValueList:
             printf("Value List:\n");
-            print_ast(node->ValueList.Val, indent +1);
+            print_ast(node->ValueList.Val, indent + 1);
             print_ast(node->ValueList.ValueList, indent + 1);
             break;
 
@@ -104,47 +103,112 @@ void print_ast(ASTNode* node, int indent)
             break;
 
         case NodeType_SimpleExpr:
-            printf("Simple Expression: value = %d\n", node->SimpleExpr.value);
+            printf("Simple Expression: Value = %d\n", node->SimpleExpr.value);
             break;
 
         case NodeType_SimpleID:
-            printf("Simple ID: id = %s\n", node->SimpleID.id);
+            printf("Simple ID: ID = %s\n", node->SimpleID.id);
             break;
         case NodeType_SimpleFloat:
-            printf("Simple Float: value = %f\n", node->SimpleFloat.value);
+            printf("Simple Float: Value = %f\n", node->SimpleFloat.value);
             break;
         case NodeType_SimpleString:
-            printf("Simple String: value = %s\n", node->SimpleString.value);
+            printf("Simple String: Value = %s\n", node->SimpleString.value);
             break;
         case NodeType_SimpleArrIndex:
-            printf("Simple Array Index: id = %s, index = %d\n", node->SimpleArrIndex.id, node->SimpleArrIndex.index);
+            printf("Simple Array Index: ID = %s, Index = %d\n", node->SimpleArrIndex.id, node->SimpleArrIndex.index);
             break;
         case NodeType_SimpleStructMember:
-            printf("Simple Struct Member: id = %s, member id = %s\n", node->SimpleStructMember.id, node->SimpleStructMember.member_id);
+            printf("Simple Struct Member: ID = %s, Member ID = %s\n", node->SimpleStructMember.id, node->SimpleStructMember.member_id);
             break;
 
         case NodeType_WriteStmnt:
-            printf("Write Statement: id = %s\n", node->WriteStmnt.id);
+            printf("Write Statement: ID = %s\n", node->WriteStmnt.id);
             break;
 
         case NodeType_TypeCast:
-            printf("Type Cast: type = %s, id = %s\n", node->TypeCast.type, node->TypeCast.id);
+            printf("Type Cast: Type = %s, ID = %s\n", node->TypeCast.type, node->TypeCast.id);
             break;
 
         case NodeType_StructDeclList:
-            printf("Struct Decl List:\n");
+            printf("Struct Declaration List:\n");
             print_ast(node->StructDeclList.StructDecl, indent + 1);
             print_ast(node->StructDeclList.StructDeclList, indent + 1);
             break;
+
         case NodeType_StructDecl:
-            printf("Struct Decl: ID = %s\n", node->StructDecl.id);
+            printf("Struct Declaration: ID = %s\n", node->StructDecl.id);
             print_ast(node->StructDecl.VarDeclList, indent + 1);
+            break;
+
+        case NodeType_IfStmnt:
+            printf("If Statement:\n");
+            print_ast(node->IfStmnt.ConditionList, indent + 1);
+            print_ast(node->IfStmnt.StmntList, indent + 1);
+            print_ast(node->IfStmnt.ElseIfList, indent + 1);
+            print_ast(node->IfStmnt.ElseStmnt, indent + 1);
+            break;
+        
+        case NodeType_ElseIfList:
+            printf("Else If List:\n");
+            print_ast(node->ElseIfList.ElseIfStmnt, indent + 1);
+            print_ast(node->ElseIfList.ElseIfList, indent + 1);
+            break;
+        
+        case NodeType_ElseIfStmnt:
+            printf("Else If Statement:\n");
+            print_ast(node->ElseIfStmnt.ConditionList, indent + 1);
+            print_ast(node->ElseIfStmnt.StmntList, indent + 1);
+            break;
+        
+        case NodeType_ElseStmnt:
+            printf("Else Statement:\n");
+            print_ast(node->ElseStmnt.StmntList, indent + 1);
+            break;
+
+        case NodeType_ConditionList:
+            printf("Condition List: Boolean Operator = %s\n", node->ConditionList.BoolOperator);
+            print_ast(node->ConditionList.Condition, indent + 1);
+            print_ast(node->ConditionList.ConditionList, indent + 1);
+            break;
+        
+        case NodeType_Condition:
+            printf("Condition: Comparison Operator = %s\n", node->Condition.ComparisonOperator);
+            print_ast(node->Condition.LeftVal, indent + 1);
+            print_ast(node->Condition.RightVal, indent + 1);
+            break;
+
+        case NodeType_SwitchStmnt:
+            printf("Switch Statement:\n");
+            print_ast(node->SwitchStmnt.Expr, indent + 1);
+            print_ast(node->SwitchStmnt.CaseList, indent + 1);
+            print_ast(node->SwitchStmnt.DefaultCase, indent + 1);
+            break;
+
+        case NodeType_CaseList:
+            printf("Case List:\n");
+            print_ast(node->CaseList.CaseStmnt, indent + 1);
+            print_ast(node->CaseList.CaseList, indent + 1);
+            break;
+        
+        case NodeType_CaseStmnt:
+            printf("Case Statement:\n");
+            print_ast(node->CaseStmnt.Val, indent + 1);
+            print_ast(node->CaseStmnt.StmntList, indent + 1);
+            break;
+        
+        case NodeType_DefaultCase:
+            printf("Default Case Statement:\n");
+            print_ast(node->DefaultCase.StmntList, indent + 1);
             break;
         
         default:
+            printf("Unknown node type\n");
             break;
     }   
 }
+
+
 
 //Trying out freeing ASTTree
 void freeAST(ASTNode* node) {
