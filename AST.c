@@ -202,6 +202,14 @@ void print_ast(ASTNode* node, int indent)
             print_ast(node->DefaultCase.StmntList, indent + 1);
             break;
         
+
+        case NodeType_WhileLoop:
+            printf("While Loop:\n");
+            print_ast(node->WhileLoop.ConditionList, indent + 1);
+            print_ast(node->WhileLoop.StmntList, indent + 1);
+            break;
+
+
         default:
             printf("Unknown node type\n");
             break;

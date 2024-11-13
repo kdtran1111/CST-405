@@ -43,7 +43,8 @@ typedef enum
     NodeType_SwitchStmnt,
     NodeType_CaseList,
     NodeType_CaseStmnt,
-    NodeType_DefaultCase
+    NodeType_DefaultCase,
+    NodeType_WhileLoop
 
 }NodeType;
 
@@ -292,6 +293,14 @@ typedef struct ASTNode
             struct ASTNode* StmntList;
         }DefaultCase;
         
+
+        struct
+        {
+            struct ASTNode* ConditionList;
+            struct ASTNode* StmntList;
+        }WhileLoop;
+
+
     };
     
 }ASTNode;
