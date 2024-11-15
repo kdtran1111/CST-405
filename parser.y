@@ -34,6 +34,7 @@ void yyerror(const char* s) {
 
 /* Define token types */
 %token <string> KEYWORD
+%token <string> WHILE
 %token <string> IF
 %token <string> ELSE
 %token <string> ELIF
@@ -648,6 +649,15 @@ Default:
 
 Stmnt:
 
+    WHILE LPAR ConditionList RPAR LCURL StmntList RCURL
+    {
+        printf("PARSERL Recognized while statement\n");
+        $$ = malloc(sizeof(ASTNode));
+        $$->type = NodeType_WhileLoop;
+        $$->WhileLoop.ConditionList = $3;
+        $$->WhileLoop.StmntList = $6;
+    }
+    |
     SWITCH {in_switch = 1;} LPAR Expr {in_switch = 0;} RPAR LCURL CaseList Default RCURL
     {
         $$ = malloc(sizeof(ASTNode));

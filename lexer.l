@@ -44,7 +44,6 @@ ArithmeticOperator    [-+*/]
 "else"      { words++; chars += strlen(yytext); printf("%s : ELSE\n", yytext); return ELSE; }
 "elif"		{ words++; chars += strlen(yytext); printf("%s : ELIF\n", yytext); return ELIF; }
 "for"       { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
-"while"     { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
 "do"        { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
 "continue"  { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
 "goto"      { words++; chars += strlen(yytext); printf("%s : KEYWORD\n", yytext); return KEYWORD; }
@@ -58,6 +57,7 @@ ArithmeticOperator    [-+*/]
 "switch"    { words++; chars += strlen(yytext); printf("%s : SWITCH\n", yytext); return SWITCH; }
 "break"     { words++; chars += strlen(yytext); printf("%s : BREAK\n", yytext); return BREAK; }
 "default"   { words++; chars += strlen(yytext); printf("%s : DEFAULT\n", yytext); return DEFAULT; }
+"while"     { words++; chars += strlen(yytext); printf("%s : WHILE\n", yytext); return WHILE; }
 
 int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 printf("%s : TYPE\n", yytext);
