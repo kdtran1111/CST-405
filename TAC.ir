@@ -1,9 +1,12 @@
 .data
+cubert: .space 32
 
 .text
 
 .globl
 
 main:
-t0 = 1
+t0 = cubert
+t1 = Cube1
+t0[0] = t1
 

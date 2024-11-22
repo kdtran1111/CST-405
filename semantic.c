@@ -1001,7 +1001,52 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             // Type casting logic
 
             break;
+        case NodeType_IfStmnt:
+           printf("went into ifStmnt\n");
+            semanticAnalysis(node->IfStmnt.ConditionList->Condition.LeftVal ,outer_table_semantic);
+            semanticAnalysis(node->IfStmnt.ConditionList->Condition.RightVal ,outer_table_semantic);
+            printf("end of ifStmnt\n");
+            break;
+        
+        case NodeType_ElseIfList:
+            
+            break;
 
+        case NodeType_ElseIfStmnt:
+        // If-else logic
+            break;
+
+        case NodeType_ElseStmnt:
+
+            break;
+
+        case NodeType_ConditionList:
+            
+            break;
+
+        case NodeType_Condition:
+            fprintf(stdout,"went into condition\n");
+            generateTACForNode(node, &tacHead, createTempVar(), createTempVar());
+
+            break;
+
+        case NodeType_SwitchStmnt:
+
+            break;
+        case NodeType_CaseList:
+
+            break;
+
+        case NodeType_CaseStmnt:
+        
+            break;
+        
+        case NodeType_DefaultCase:
+
+            break;
+        case NodeType_WhileLoop:
+
+            break;
         default:
             break;
     }
@@ -1015,7 +1060,23 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
         appendTAC(&tacHead,tac);
     }
     if ( node->type == NodeType_SimpleExpr){
-       
+       TAC* tac = generateTACForExpr(node,outer_table_semantic);
+
+        // Process or store the generated TAC
+        //printTAC(tac);
+        appendTAC(&tacHead,tac);
+    } else if (node->type == NodeType_SimpleFloat){
+        TAC* tac = generateTACForExpr(node,outer_table_semantic);
+
+        // Process or store the generated TAC
+        //printTAC(tac);
+        appendTAC(&tacHead,tac);
+    } else if (node->type == NodeType_SimpleString){
+        TAC* tac = generateTACForExpr(node,outer_table_semantic);
+
+        // Process or store the generated TAC
+        //printTAC(tac);
+        appendTAC(&tacHead,tac);
     }
     if(node->Expr.right ==NULL){
         printf("well well well\n");
@@ -1152,14 +1213,14 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
                 case NodeType_SimpleExpr: {
                     printf("Kevin\n");
                     newTac->result= createTempVar();
-                    newTac->arg1 = createOperand(expr,symbol_Table);
+                    newTac->arg1 = createOperand(expr,structIDSymbol->value.structValue);
                     updateRegisterStruct(structIDSymbol->value.structValue, currentID, newTac->result);
                     break;
                 
                 }
                 case NodeType_SimpleFloat: {
                     newTac->result= createTempVar();
-                    newTac->arg1 = createOperand(expr,symbol_Table);
+                    newTac->arg1 = createOperand(expr,structIDSymbol->value.structValue);
                     updateRegisterStruct(structIDSymbol->value.structValue, currentID, newTac->result);
                     break;
                 
@@ -1167,7 +1228,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
                 
                 case NodeType_SimpleString: {
                     newTac->result= createTempVar();
-                    newTac->arg1 = createOperand(expr,symbol_Table);
+                    newTac->arg1 = createOperand(expr,structIDSymbol->value.structValue);
                     updateRegisterStruct(structIDSymbol->value.structValue, currentID, newTac->result);
                     break;              
                 }
@@ -1376,6 +1437,17 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
             }
             //snprintf(operand, 32, "%f", node->SimpleFloat.value);
             break;
+        }
+        case NodeType_SimpleString: {
+      
+            if (strcmp(symbol->type_str, "string_array")==0 || strcmp(symbol->type_str, "string") ==0){
+                snprintf(operand, 32, "%s", node->SimpleString.value);
+               
+            } else {
+                printf("The type string is not string or string_array\n");
+            }
+            break;
+
         }
         case NodeType_SimpleStructMember:
         {   
@@ -1694,3 +1766,74 @@ char* createTempVar() {
 
 }
 
+
+
+
+
+
+
+//function to generate TAC for If condition
+void generateTACForNode(ASTNode* node, TAC** tacList, char* labelTrue, char* labelFalse) {
+    if (node == NULL) return;
+    printf("Went into generateTACForNode\n");
+    switch (node->type) {
+        case NodeType_IfStmnt: {
+            char* labelEnd = createTempVar(); // Label for end of if statement
+            generateTACForNode(node->ConditionList.Condition, tacList, labelTrue, labelFalse);
+
+            // Label for true block
+            appendTAC(tacList, createTACSemantic("label", labelTrue, NULL, NULL));
+            // Generate TAC for the body of the if statement
+            appendTAC(tacList, createTACSemantic("call", "test", NULL, NULL)); // Example: test()
+            // Jump to end
+            appendTAC(tacList, createTACSemantic("goto", NULL, NULL, labelEnd));
+
+            // Label for false block
+            appendTAC(tacList, createTACSemantic("label", labelFalse, NULL, NULL));
+            appendTAC(tacList, createTACSemantic("label", labelEnd, NULL, NULL));
+            break;
+        }
+        case NodeType_ConditionList: {
+            char* tempLabel = createTempVar(); // For intermediate labels
+
+            if (strcmp(node->ConditionList.BoolOperator, "AND") == 0) {
+                // Short-circuit for AND: Left then right
+                generateTACForNode(node->Condition.LeftVal, tacList, tempLabel, labelFalse);
+                appendTAC(tacList, createTACSemantic("label", tempLabel, NULL, NULL));
+                generateTACForNode(node->Condition.RightVal, tacList, labelTrue, labelFalse);
+            } else if (strcmp(node->ConditionList.BoolOperator, "OR") == 0) {
+                // Short-circuit for OR: Left then right
+                generateTACForNode(node->Condition.LeftVal, tacList, labelTrue, tempLabel);
+                appendTAC(tacList, createTACSemantic("label", tempLabel, NULL, NULL));
+                generateTACForNode(node->Condition.RightVal, tacList, labelTrue, labelFalse);
+            }
+            break;
+        }
+        case NodeType_Condition: {
+            // Generate TAC for comparison (e.g., <, >, ==)
+            char* temp1 = createTempVar();
+            char* temp2 = createTempVar();
+
+            appendTAC(tacList, createTACSemantic("load", node->Condition.LeftVal, NULL, temp1));
+            appendTAC(tacList, createTACSemantic("load", node->Condition.RightVal, NULL, temp2));
+            appendTAC(tacList, createTACSemantic("if", temp1, temp2, labelTrue));
+            appendTAC(tacList, createTACSemantic("goto", NULL, NULL, labelFalse));
+            break;
+        }
+        default:
+            fprintf(stderr, "Node type not handled in TAC generation: %d\n", node->type);
+            break;
+    }
+}
+
+
+//Function to create TAC for If condition
+TAC* createTACSemantic(char* op, char* arg1, char* arg2, char* result) {
+    TAC* node = (TAC*)malloc(sizeof(TAC));
+    node->op = strdup(op);
+    node->arg1 = arg1 ? strdup(arg1) : NULL;
+    node->arg2 = arg2 ? strdup(arg2) : NULL;
+    node->result = result ? strdup(result) : NULL;
+    node->next = NULL;
+    return node;
+}

@@ -1,7 +1,10 @@
-int c;
-c = 1;
-
-while (c < 1)
+struct Cube
 {
-    c = c + 1;
+    int Xpos;
+    int Ypos;
+    float zPos;
+    string name;
+    
 }
+_Cube cubert;
+cubert.name = "Cube1";

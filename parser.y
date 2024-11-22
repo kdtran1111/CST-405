@@ -89,7 +89,7 @@ void yyerror(const char* s) {
 %nonassoc LPAR RPAR
 
 %printer { fprintf(yyoutput, "%s", $$); } ID;
-%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val StructDeclList StructDecl ConditionList Condition ElseStmnt ElseIfList ElseIfStmnt CaseStmnt CaseList Case Default
+%type <ast> program VarDeclList StmntList VarDecl Stmnt Expr FuncDeclList FuncDecl ParamList ReturnStmnt Param ParamListNonEmpty ValueList ValueListNonEmpty Val StructDeclList StructDecl ConditionList Condition ElseStmnt ElseIfList ElseIfStmnt CaseList Case Default
 %type <string> ComparisonOperator
 %%
 

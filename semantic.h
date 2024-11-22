@@ -66,5 +66,7 @@ void generate_array_assign_tac(ASTNode* node, SymbolTable* symbol_table);
 // Param functions
 void generate_param_pass_tac(ASTNode* node, SymbolTable* symbol_table);
 
-
+//functions to generateTAC explicitly for If condtion
+void generateTACForNode(ASTNode* node, TAC** tacList, char* labelTrue, char* labelFalse);
+TAC* createTACSemantic(char* op, char* arg1, char* arg2, char* result);
 #endif // SEMANTIC_H
