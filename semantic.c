@@ -1059,19 +1059,19 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
         //printTAC(tac);
         appendTAC(&tacHead,tac);
     }
-    if ( node->type == NodeType_SimpleExpr){
+    if ( node->type == NodeType_SimpleExpr && structMemberAssignment ==1){
        TAC* tac = generateTACForExpr(node,outer_table_semantic);
 
         // Process or store the generated TAC
         //printTAC(tac);
         appendTAC(&tacHead,tac);
-    } else if (node->type == NodeType_SimpleFloat){
+    } else if (node->type == NodeType_SimpleFloat && structMemberAssignment ==1){
         TAC* tac = generateTACForExpr(node,outer_table_semantic);
 
         // Process or store the generated TAC
         //printTAC(tac);
         appendTAC(&tacHead,tac);
-    } else if (node->type == NodeType_SimpleString){
+    } else if (node->type == NodeType_SimpleString && structMemberAssignment ==1){
         TAC* tac = generateTACForExpr(node,outer_table_semantic);
 
         // Process or store the generated TAC
