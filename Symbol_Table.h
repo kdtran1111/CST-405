@@ -56,10 +56,19 @@ typedef struct Symbol{
     VarValue value;
     int size;
     char* tempVar;
+    char* tempVarStruct; // to help with generate EXPR, supposed to be named as tempVar but dont want to change anything
+    char* arrayDeclVar;
+    int tempIndex;
     char* temp; // to store the previous * or / in the complex expression
     char* type_str;
     char* id;
 }Symbol;
+
+// Linked List Struct
+typedef struct LinkedListNode {
+    Symbol* symbol;
+    struct LinkedListNode* next;
+} LinkedListNode;
 
 //-------Functions---------
 
@@ -98,15 +107,34 @@ char* getSymbolType(Symbol* symbol);
 SymbolTable* get_symbol_table(OuterSymbolTable* outerTable, const char* scopeName);
 
 // Update Functions
+void updateTempIndex(Symbol* symbol, int tempIndex);
 void update_int_arr_value(SymbolTable* table, char* id, int index, int value);
 void update_float_arr_value(SymbolTable* table, char* id, int index, float value);
 void update_string_arr_value(SymbolTable* table, char* id, int index, char* value);
 void updateRegister(SymbolTable* table, const char* key, char* registerName);
+void updateRegisterStruct(SymbolTable* table, const char* key, char* registerName);
 void updatetemp(SymbolTable* table, const char* key, char* registerName);
 //void updateValue(SymbolTable* table, const char* key, int new_value);
 void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type);
 //void updateValueFloat(SymbolTable* table, const char* key, int new_value);
 //void updateValueString(SymbolTable* table, const char* key, int new_value);
+
+void updateValueInt(SymbolTable* table, const char* key, int new_value);
+
+//Linked List Functions
+LinkedListNode* create_parameter_linked_list(SymbolTable* table);
+void print_linked_list(LinkedListNode* head);
+LinkedListNode* get_next_register(SymbolTable* table, int next_reg);
+void print_array_linked_list(LinkedListNode* head);
+LinkedListNode* create_array_linked_list(OuterSymbolTable* outerTable) ;
+LinkedListNode* get_arrays_in_scope(SymbolTable* table, OuterSymbolTable* outer_table);
+
+// Struct Functions
+LinkedListNode* get_linked_list_tail(LinkedListNode* head);
+int get_struct_size(SymbolTable* table);
+void update_struct_variable_registers(SymbolTable* table, char* tempVar);
+
+
 // copy function
 SymbolTable* deep_copy_symbol_table(SymbolTable* original);
 

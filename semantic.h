@@ -43,15 +43,32 @@ TAC* generateTACForSimpleExpr(ASTNode* expr, SymbolTable* symbol_table);
 // Function prototypes for array declaration checks
 void check_array_not_redeclared(SymbolTable* table, const char* id, int line);
 
+
 void check_array_type(const char* type, int line);
 void check_array_size(int size, int line);
 //main function to combine all semantic check for array
+
 void check_array_declaration(SymbolTable* table, const char* type, const char* id, int size, int line);
 
 //Trying TempVar Map
 void addTempVarMapping(char* key, char* tempVar);
 char* findTempVar(char* key);
+
 //Function for type coercion
 void apply_type_coercion(SymbolTable* symbol_table, const char* id, ASTNode* expr, int line);
+
 void def_outer_table_semantic(OuterSymbolTable* outer_table);
+
+
+// Array functions
+void generate_array_assign_tac(ASTNode* node, SymbolTable* symbol_table);
+
+// Param functions
+void generate_param_pass_tac(ASTNode* node, SymbolTable* symbol_table);
+
+//functions to generateTAC explicitly for If condtion
+void generateTACForNode(ASTNode* node, TAC** tacList, char* labelTrue, char* labelFalse);
+TAC* createTACSemantic(char* op, char* arg1, char* arg2, char* result);
+void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* labelTrue, char* cmpHolder); // generate TAC for label 
+char* createTempLabel(); //function to create temp Label for if
 #endif // SEMANTIC_H

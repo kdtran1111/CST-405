@@ -1,0 +1,56 @@
+Instructions to use:
+- beq -> Branch if equal [EX: beq t0, t1, label]
+- bne -> Branch if not equal [EX: bne t0, t1, label]
+- slt -> set if less than [EX: slt t2, t1, t0] (t2 = 1 if t1 < t0, t2= 0 otherwise)
+
+Comparison Operators:
+
+
+t0 = x
+t1 = y
+
+- x == y
+-----> beq t0, t1, label
+
+- x != y
+-----> bne t0, t1, label
+
+- x > y
+-----> slt t2, t1, t0
+       bne t2, zero, label
+
+- x < y
+-----> slt t2, t0, t1
+       bne t2, zero, label
+
+- x <= y
+-----> slt t2, t1, t0
+       beq t2, zero, label
+
+- x >= y
+-----> slt t2, t0, t1
+       beq t2, zero, label
+
+Examples:
+
+Input:
+    if (x < y)
+    {
+        x = 12;
+    }
+
+    y = 13;
+
+Ouptut:
+
+    slt t2, t1, t0
+    bne t2, zero, true_label
+    jump end1
+
+    true_label:
+        t0 = 12
+        jump end1
+    
+    end1:
+        t1 = 13
+
