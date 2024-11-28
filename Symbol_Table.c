@@ -588,8 +588,8 @@ void print_symbol_table(SymbolTable* table, int indent) {
         while (current != NULL) {
             // Print indent level
             for (int j = 0; j < indent; j++) printf(" ");
-            printf("Variable: %s, Type: %s, TempVar: %s, Size: %d, arrayDeclVal: %s, tempIndex is: %d Value: ",
-                   current->var->id, current->var->type_str, current->var->tempVar, current->var->size, current->var->arrayDeclVar, current->var->tempIndex);
+            printf("Variable: %s, Type: %s, TempVar: %s, Size: %d, arrayDeclVal: %s, tempIndex is: %d, ifUpdated is: %d,  Value: ",
+                   current->var->id, current->var->type_str, current->var->tempVar, current->var->size, current->var->arrayDeclVar, current->var->tempIndex,current->var->ifUpdated);
 
             // Print the value based on the type_string
             if (strcmp(current->var->type_str, "int") == 0) {
@@ -839,7 +839,7 @@ char* getSymbolType(Symbol* symbol){
 
 void updateRegister(SymbolTable* table, const char* key, char* registerName) {
     Symbol* symbol = getSymbol(table, key);
-    if (symbol != NULL) {
+    if (symbol != NULL && symbol->ifUpdated ==0) {
         symbol->tempVar = registerName;
         print_symbol_table(table, 0);
 
@@ -934,9 +934,14 @@ char* getTempVar(Symbol* symbol) {
 
 
 // New function to update the value of a symbol. Not yet needed. Will eventually be add into effect
-//Trying new updateValue with TempVar
 
-void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type) {
+//function to see if reg is updated
+int getIfUpdated(Symbol* symbol){
+    printf("ifUpdated is: %d\n", symbol->ifUpdated);
+    return symbol->ifUpdated;
+}   
+//Trying new updateValue with TempVar
+void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type, int ifUpdated) {
     Symbol* symbol = getSymbol(table, key);
     if (symbol != NULL) {
         fprintf(stdout, "Debug: Updating '%s' with type %s, current type %s\n", 
@@ -959,6 +964,7 @@ void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarTyp
             printf("new temp var created in updateValue(): %s\n", symbol->tempVar);
         }
     }
+        symbol->ifUpdated = ifUpdated;
         printf("Updated value of %s with tempVar %s\n", key, symbol->tempVar);
 }
 

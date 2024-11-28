@@ -61,6 +61,7 @@ typedef struct Symbol{
     int tempIndex;
     char* temp; // to store the previous * or / in the complex expression
     char* type_str;
+    int ifUpdated; // to see if the variable is updated yet, to avoid segmentation fault for accessing empty reg
     char* id;
 }Symbol;
 
@@ -115,9 +116,10 @@ void updateRegister(SymbolTable* table, const char* key, char* registerName);
 void updateRegisterStruct(SymbolTable* table, const char* key, char* registerName);
 void updatetemp(SymbolTable* table, const char* key, char* registerName);
 //void updateValue(SymbolTable* table, const char* key, int new_value);
-void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type);
+void updateValue(SymbolTable* table, const char* key, VarValue new_value, VarType type, int ifUpdated);
 //void updateValueFloat(SymbolTable* table, const char* key, int new_value);
 //void updateValueString(SymbolTable* table, const char* key, int new_value);
+int getIfUpdated(Symbol* symbol); // function to see if var is updated in reg
 
 void updateValueInt(SymbolTable* table, const char* key, int new_value);
 
