@@ -11,10 +11,23 @@ char* tempBoolOp;
 int opChecker =0 ; // variable to check if the op is a boolean operator, for labeling purpose, 1 for yes, 0 for no
 SymbolTable* symbol_Table;
 int paramCounter = 0; // Variable to keep track registers for parameters
+
+//variable for if statement tracking purpose
 char* labelTrue;
 char* labelFalse;
 char* ifLabelTrue;
 char* ifLabelFalse;
+
+
+//variable for else-if statement tracking purpose
+char* elseIfLabelTrue;
+char* elseIfLabelFalse;
+
+
+//variable for else statement tracking purpose
+char* elseLabelTrue;
+char* elseLabelFalse;
+
 int tempIndex;
 int tempVars[20];
 int paramVars[3];
@@ -622,6 +635,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
         case NodeType_StmntList:
             stmnt_started = 0;
             semanticAnalysis(node->StmntList.Stmnt, outer_table_semantic);
+            
             semanticAnalysis(node->StmntList.StmntList, outer_table_semantic);
             break;
 
@@ -719,6 +733,8 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             semanticAnalysis(node->program.VarDeclList, outer_table_semantic);
             printf("Traversing StmntList in program\n");
             semanticAnalysis(node->program.StmntList, outer_table_semantic);
+            
+
             
             break;
         }
@@ -953,7 +969,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             printf("2\n");
 
             structIDSymbol = getSymbol(symbol_Table,structID);
-            printf(" StructUDSymbol ID is: %s \n", structIDSymbol->id);
+            printf(" StructIDSymbol ID is: %s \n", structIDSymbol->id);
             structMemberIDSymbol = getSymbol(structIDSymbol->value.structValue,structMemberID);
             printf("structmemberidsymbol ID is:  %s\n ", structMemberIDSymbol->id);
             
@@ -1040,17 +1056,50 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             semanticAnalysis(node->IfStmnt.StmntList,outer_table_semantic); // evaluate the content inside the block
             appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelFalse));
             printf("end of ifStmnt\n");
+            semanticAnalysis(node->IfStmnt.ElseIfList,outer_table_semantic); // proceed to traverse elif
+            semanticAnalysis(node->IfStmnt.ElseStmnt,outer_table_semantic); // proceed to traverse else
             break;
         
         case NodeType_ElseIfList:
-            
+            printf("went into elseIfList\n");
+            semanticAnalysis(node->ElseIfList.ElseIfStmnt,outer_table_semantic);
+            semanticAnalysis(node->ElseIfList.ElseIfList,outer_table_semantic);
             break;
 
         case NodeType_ElseIfStmnt:
         // If-else logic
+            elseIfLabelTrue = createTempLabel();
+            elseIfLabelFalse = (char*)malloc(strlen(elseIfLabelTrue) + 1);
+            strcpy(elseIfLabelFalse, elseIfLabelTrue); 
+            //labelTrue =  createTempLabel();
+            labelTrue = strcat(elseIfLabelTrue, "_true");
+            //labelFalse = createTempLabel();
+            labelFalse = strcat(elseIfLabelFalse, "_end");
+            printf("went into elseIfStmnt\n");
+            semanticAnalysis(node->ElseIfStmnt.ConditionList ,outer_table_semantic);
+            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelTrue));
+            semanticAnalysis(node->ElseIfStmnt.StmntList,outer_table_semantic); // evaluate the content inside the block
+            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelFalse));
+            printf("end of elseIfStmnt\n");
+
+            
             break;
 
         case NodeType_ElseStmnt:
+        printf("went into elseStmnt\n");
+            elseLabelTrue = createTempLabel();
+            elseLabelFalse = (char*)malloc(strlen(elseLabelTrue) + 1);
+            strcpy(elseLabelFalse, elseLabelTrue); 
+            //labelTrue =  createTempLabel();
+            labelTrue = strcat(elseLabelTrue, "_true");
+            //labelFalse = createTempLabel();
+            labelFalse = strcat(elseLabelFalse, "_end");
+            printf("went into elseStmnt\n");
+            semanticAnalysis(node->ElseIfStmnt.ConditionList ,outer_table_semantic);
+            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelTrue));
+            semanticAnalysis(node->ElseIfStmnt.StmntList,outer_table_semantic); // evaluate the content inside the block
+            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelFalse));
+            printf("end of elseStmnt\n");
 
             break;
 
