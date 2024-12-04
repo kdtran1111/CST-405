@@ -29,6 +29,7 @@ char* elseIfLabelFalse;
 char* elseLabelTrue;
 char* elseLabelFalse;
 
+int whileCond =0; //check if the while condition is true or false for looping
 int tempIndex;
 int tempVars[20];
 int paramVars[3];
@@ -1079,15 +1080,13 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             //labelTrue =  createTempLabel();
             labelTrue = strcat(elseIfLabelTrue, "_true");
             //labelFalse = createTempLabel();
-            labelFalse = strcat(elseIfLabelFalse, "_end");
+            labelFalse = strcat(elseIfLabelFalse, "_false");
             printf("went into elseIfStmnt\n");
             semanticAnalysis(node->ElseIfStmnt.ConditionList ,outer_table_semantic);
             appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelTrue));
             semanticAnalysis(node->ElseIfStmnt.StmntList,outer_table_semantic); // evaluate the content inside the block
             appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelFalse));
             printf("end of elseIfStmnt\n");
-
-            
             break;
 
         case NodeType_ElseStmnt:
@@ -1098,12 +1097,12 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             //labelTrue =  createTempLabel();
             labelTrue = strcat(elseLabelTrue, "_true");
             //labelFalse = createTempLabel();
-            labelFalse = strcat(elseLabelFalse, "_end");
+            labelFalse = strcat(elseLabelFalse, "_false");
             printf("went into elseStmnt\n");
             semanticAnalysis(node->ElseIfStmnt.ConditionList ,outer_table_semantic);
-            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelTrue));
+            //appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelTrue));
             semanticAnalysis(node->ElseIfStmnt.StmntList,outer_table_semantic); // evaluate the content inside the block
-            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelFalse));
+            //appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelFalse));
             printf("end of elseStmnt\n");
 
             break;
