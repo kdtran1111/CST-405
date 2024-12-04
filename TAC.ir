@@ -14,26 +14,25 @@ IF t4 >= 0 GOTO L0_true
 t5 = t1
 t6 = 2
 t7 = t5 - t6
-IF t7 >= 0 GOTO L0_end
+IF t7 >= 0 GOTO L0_false
 t8 = t1
 t9 = 4
 t10 = t8 - t9
 L0_true:
 t11 = t1 + 1
-L0_end:
-L1_true:
-L1_end:
+L0_false:
 t12 = t1
 t13 = 5
 t14 = t12 - t13
-IF t14 < 0 GOTO L2_true
+IF t14 < 0 GOTO L1_true
 t15 = t1
 t16 = 6
 t17 = t15 - t16
-L2_true:
+L1_true:
 t18 = t1 + 3
-L2_end:
+L1_end:
 t19 = t1 + 5
-L3_true:
-L3_end:
+L2_true:
+L2_end:
+L0_end:
 

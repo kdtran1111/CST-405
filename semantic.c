@@ -15,9 +15,10 @@ int paramCounter = 0; // Variable to keep track registers for parameters
 //variable for if statement tracking purpose
 char* labelTrue;
 char* labelFalse;
-char* ifLabelTrue;
-char* ifLabelFalse;
-
+char* labelEnd; // label the end of the whole  if-elif-else statement
+char* ifLabelTrue; // placeholders for strcat
+char* ifLabelFalse;// placeholders for strcat
+char* ifLabelEnd; // placeholders for strcat
 
 //variable for else-if statement tracking purpose
 char* elseIfLabelTrue;
@@ -1045,11 +1046,14 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
         case NodeType_IfStmnt:
             ifLabelTrue = createTempLabel();
             ifLabelFalse = (char*)malloc(strlen(ifLabelTrue) + 1);
+            ifLabelEnd = (char*)malloc(strlen(ifLabelFalse) + 1);
             strcpy(ifLabelFalse, ifLabelTrue); 
+            strcpy(ifLabelEnd, ifLabelTrue); 
             //labelTrue =  createTempLabel();
             labelTrue = strcat(ifLabelTrue, "_true");
             //labelFalse = createTempLabel();
-            labelFalse = strcat(ifLabelFalse, "_end");
+            labelFalse = strcat(ifLabelFalse, "_false");
+            labelEnd = strcat(ifLabelEnd, "_end");
             printf("went into ifStmnt\n");
             semanticAnalysis(node->IfStmnt.ConditionList ,outer_table_semantic);
             appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelTrue));
@@ -1058,6 +1062,7 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             printf("end of ifStmnt\n");
             semanticAnalysis(node->IfStmnt.ElseIfList,outer_table_semantic); // proceed to traverse elif
             semanticAnalysis(node->IfStmnt.ElseStmnt,outer_table_semantic); // proceed to traverse else
+            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,labelEnd));
             break;
         
         case NodeType_ElseIfList:
