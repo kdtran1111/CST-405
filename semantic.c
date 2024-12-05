@@ -828,23 +828,28 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
 
         case NodeType_ParamList:
             // Traverse parameter list
-
-
             semanticAnalysis(node->ParamList.Param, outer_table_semantic);
             semanticAnalysis(node->ParamList.ParamList, outer_table_semantic);
             break;
 
         case NodeType_Param: {
+            
             Symbol* curr_symbol = getSymbol(symbol_Table, node->Param.id);
-            if (symbol != NULL) 
+            print_symbol_table(symbol_Table, 4);
+            
+            if (curr_symbol != NULL) 
             {
                 char* paramVar = createParameterVar();
                 updateRegister(symbol_Table, node->Param.id, paramVar);
                 printf("tempVar for %s is %s\n", node->Param.id, curr_symbol->tempVar);
+                
             }
             else
             {
                 printf("ERROR: cant find symbol for %s\n", node->Param.id);
+                print_symbol_table(symbol_Table, 4);
+                //exit(1);
+                
             }
 
 
@@ -990,22 +995,23 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
             printf("Function call: %s\n", node->FunctionCall.id);
             curr_param = create_parameter_linked_list(get_symbol_table(outer_table_semantic, node->FunctionCall.id));
             print_linked_list(curr_param);
+            print_table(outer_table_semantic);
+            
 
             function_called = 1;
             semanticAnalysis(node->FunctionCall.valueList, outer_table_semantic);
+            
             if(curr_param != NULL)
             {
                 printf("ERROR: function call to %s has too few parameters\n", node->FunctionCall.id);
                 exit(1);
             }
             function_called = 0;
-
+            
             TAC* call_tac = (TAC*)malloc(sizeof(TAC));
             call_tac->keyword = strdup("jump");
             call_tac->arg1 = strdup(node->FunctionCall.id);
             appendTAC(&tacHead, call_tac);
-            
-
             
             if (strcmp(get_scope_type(outer_table_semantic, node->FunctionCall.id), "void") != 0)
             {
@@ -1016,10 +1022,19 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
                 else if(strcmp(get_scope_type(outer_table_semantic, node->FunctionCall.id), getSymbol(symbol_Table, currentID)->type_str) == 0)
                 {
                     printf("currentID is %s\n", currentID);
+                    print_table(outer_table_semantic);
+                    
                     call_tac = (TAC*)malloc(sizeof(TAC));
                     call_tac->arg1 = strdup("v0");
+
+                    Symbol* symbol = getSymbol(symbol_Table, currentID);
+                    if (symbol->tempVar == NULL)
+                    {
+                        symbol->tempVar = createTempVar();
+                    }
                     call_tac->result = strdup(getTempVar(getSymbol(symbol_Table, currentID)));
                     appendTAC(&tacHead, call_tac);
+                
                 }
 
                 else
@@ -1665,9 +1680,9 @@ void generate_param_pass_tac(ASTNode* node, SymbolTable* symbol_table)
 
         case NodeType_SimpleExpr:
         {
-            if(strcmp("INT", curr_param->symbol->type_str) != 0)
+            if(strcmp("int", curr_param->symbol->type_str) != 0)
             {
-                printf("ERROR: Type mismatch\n");
+                printf("ERROR HELLO: Type mismatch\n");
                 exit(1);
             }
             
@@ -1691,7 +1706,7 @@ void generate_param_pass_tac(ASTNode* node, SymbolTable* symbol_table)
 
         case NodeType_SimpleFloat:
         {
-            if(strcmp("FLOAT", curr_param->symbol->type_str) != 0)
+            if(strcmp("float", curr_param->symbol->type_str) != 0)
             {
                 printf("ERROR: Type mismatch\n");
                 exit(1);
@@ -1716,7 +1731,7 @@ void generate_param_pass_tac(ASTNode* node, SymbolTable* symbol_table)
 
         case NodeType_SimpleString:
         {
-            if(strcmp("STRING", curr_param->symbol->type_str) != 0)
+            if(strcmp("string", curr_param->symbol->type_str) != 0)
             {
                 printf("ERROR: Type mismatch\n");
                 exit(1);
@@ -1740,6 +1755,8 @@ void generate_param_pass_tac(ASTNode* node, SymbolTable* symbol_table)
             break;
     }
 }
+
+
 void generate_array_assign_tac(ASTNode* node, SymbolTable* symbol_table)
 {
     // Get symbol for current array

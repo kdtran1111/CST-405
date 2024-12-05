@@ -1,12 +1,13 @@
-int c;
-int d;
-d=7;
-c =5;
-if (d >= 3 || c < 2 && c == 4) {
-    c = c + 1;
-} elif (c<5 || c ==6) {
-    c = c + 3;
-} else {
-
-    c = c+5;
+func void testFunc (int param1, int param2)
+{
+    int d;
+    d = 10 * param1 + param2 / 10;
 }
+
+int c;
+int b; 
+
+b = 2;
+c = 1;
+
+testFunc(c, b);
