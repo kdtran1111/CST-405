@@ -32,6 +32,7 @@ char* elseLabelFalse;
 //Variable for while 
 char* whileStart;
 char* whileEnd;
+
 int tempIndex;
 int tempVars[20];
 int paramVars[3];
@@ -204,7 +205,11 @@ void printTACToFile(const char* filename, TAC* tac) {
         
         fprintf(file, "%s = %s\n", current->result, current->arg1);
         fprintf(stdout,"%s = %s\n", current->result, current->arg1);
-        } 
+        }
+        else if( current->op==NULL, current->result==NULL,current->arg2 ==NULL){
+        fprintf(file, "GOTO %s\n", current->arg1);
+        fprintf(stdout,"GOTO %s\n", current->arg1);    
+        }
         
 
         if (cntr >= 1)
@@ -2017,48 +2022,6 @@ TAC* createTACSemantic(char* op, char* arg1, char* arg2, char* result) {
     return node;
 }
 
-/*
-void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* labelTrue, char* cmpHolder){
-    // Compare the operator string
-    if (strcmp(node->Condition.ComparisonOperator, "==") == 0) {
-        // x == y
-       
-    } else if (strcmp(node->Condition.ComparisonOperator, "!=") == 0) {
-        // x != y
-        
-    } else if (strcmp(node->Condition.ComparisonOperator, ">") == 0) {
-        // x > y
-        
-    } else if (strcmp(node->Condition.ComparisonOperator, "<") == 0) {
-        // x < y
-        
-    } else if (strcmp(node->Condition.ComparisonOperator, "<=") == 0) {
-        // x <= y
-        
-    } else if (strcmp(node->Condition.ComparisonOperator, ">=") == 0) {
-        // x >= y
-        printf(">= is okay\n");
-        //appendTAC(tacList, createTACSemantic("slt", createTempVar(), temp1, "slt")); // temp3 = t0 < t1
-        printf("6 labelFalse is: %s cmpHolder is: %s tempBoolOp is: %s\n", labelTrue, cmpHolder, tempBoolOp); 
-        if (tempBoolOp != NULL && strcmp(tempBoolOp, "OR") == 0 ){
-        opChecker =1 ;
-        appendTAC(tacList, createTACSemantic(">=", "0", labelTrue, cmpHolder));
-        }
-        if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0 ){
-        opChecker =1 ;
-        appendTAC(tacList, createTACSemantic("<", "0", labelFalse, cmpHolder));
-        }
-
-        printf("5\n"); 
-    } else {
-        // Unrecognized operator
-        fprintf(stderr, "Unknown operator: %s\n", node->Condition.ComparisonOperator);
-    }
-            
-            
-}
-
-*/
 
 void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* labelTrue, char* cmpHolder) {
     // Compare the operator string

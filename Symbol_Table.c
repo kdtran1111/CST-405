@@ -825,8 +825,6 @@ Symbol* getSymbol(SymbolTable* table, const char* key) {
 
     while (current != NULL) {
         if (strcmp(current->key, key) == 0) {
-            printf("Comparing '%s' with '%s'\n", current->key, key);
-
             return current->var;
         } else {
             current = current->next;
@@ -843,7 +841,7 @@ void updateRegister(SymbolTable* table, const char* key, char* registerName) {
     Symbol* symbol = getSymbol(table, key);
     if (symbol != NULL && symbol->ifUpdated ==0) {
         symbol->tempVar = registerName;
-        
+        print_symbol_table(table, 0);
 
 
     } else {
@@ -854,7 +852,7 @@ void updateRegisterStruct(SymbolTable* table, const char* key, char* registerNam
     Symbol* symbol = getSymbol(table, key);
     if (symbol != NULL) {
         symbol->tempVarStruct = registerName;
-        
+        print_symbol_table(table, 0);
 
 
     } else {
