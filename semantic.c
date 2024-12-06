@@ -1162,7 +1162,16 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
 
             break;
         case NodeType_WhileLoop:
-
+            whileStart = createTempLabel();
+            whileEnd = (char*)malloc(strlen(whileStart) + 1);
+            strcpy(whileEnd, whileStart); 
+            whileStart = strcat(whileStart, "_true");
+            whileEnd = strcat(whileEnd, "_end");
+            semanticAnalysis(node->WhileLoop.ConditionList ,outer_table_semantic);
+            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,whileStart));
+            semanticAnalysis(node->WhileLoop.StmntList,outer_table_semantic); // evaluate the content inside the block
+            appendTAC(&tacHead, createTACSemantic(NULL,whileStart,NULL,NULL));
+            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,whileEnd));
             break;
         default:
             break;
