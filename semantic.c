@@ -29,7 +29,9 @@ char* elseIfLabelFalse;
 char* elseLabelTrue;
 char* elseLabelFalse;
 
-int whileCond =0; //check if the while condition is true or false for looping
+//Variable for while 
+char* whileStart;
+char* whileEnd;
 int tempIndex;
 int tempVars[20];
 int paramVars[3];
