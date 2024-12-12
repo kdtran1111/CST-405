@@ -58,7 +58,7 @@ ArithmeticOperator    [-+*/]
 "break"     { words++; chars += strlen(yytext); printf("%s : BREAK\n", yytext); return BREAK; }
 "default"   { words++; chars += strlen(yytext); printf("%s : DEFAULT\n", yytext); return DEFAULT; }
 "while"     { words++; chars += strlen(yytext); printf("%s : WHILE\n", yytext); return WHILE; }
-
+"//".*      {/* Ignore the comment */ }
 int|char|string|float|bool	{words++; chars += strlen(yytext);
 		 printf("%s : TYPE\n", yytext);
 		 yylval.string = strdup(yytext);

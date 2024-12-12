@@ -1428,7 +1428,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             if (symbol->tempVar==NULL && symbol->tempVar!=tempResult){
             newTac->arg1 = createOperand(expr->Expr.left, symbol_Table);  // Left operand (e.g., t0 for x)
             fprintf(stdout, "newTac->arg1 is:  %s\n", newTac->arg1);// DEbug
-            fprintf(stdout, "TempResult is: %s\n", tempResult);// DEbug
+            //fprintf(stdout, "TempResult is: %s\n", tempResult);// DEbug
             } else if (symbol->tempVar!=NULL && expr->Expr.left->type != NodeType_Expr ){
                 newTac->arg1 = createOperand(expr->Expr.left, symbol_Table);  // Left operand (e.g., t0 for x)
                 fprintf(stdout, "newTac->arg1 is:  %s in else if \n", newTac->arg1);// DEbug
@@ -1462,7 +1462,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             // Create a new temp var for the result of the expression
             
             
-            fprintf(stdout, "TempResult: %s\n", tempResult); //Debug
+            //fprintf(stdout, "TempResult: %s\n", tempResult); //Debug
             fprintf(stdout, "newTac->result: %s\n", newTac->result);
             fprintf(stdout,"Generated in generateTAC\n");
             newTac->next = NULL;

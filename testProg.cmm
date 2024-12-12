@@ -1,16 +1,142 @@
-int c;
-int d;
-d=7;
-c =5;
-if (d >= 3 || c < 2 && c == 4) {
-    c = c + 1;
-} elif (c<5 || c ==6) {
-    c = c + 3;
+func void printInt(int value) {
+    write value; //Print the integer followed by a newline
+}
+
+// Function to print a character
+func void printChar(string value) {
+    write value; // Print the character followed by a newline
+}
+
+// Function to print a floating-point number
+func void printFloat(float value) {
+    write value; // Print the float to two decimal places followed by a newline
+}
+
+// Function to compute the sum of two integers with additional logic
+func int computeSum(int a, int b) {
+    int sum;
+    int doubleSum;
+    int temp;
+
+    sum = a + b;  // Compute sum
+    temp = sum + 5;  // Add constant
+    doubleSum = temp * 2;  // Double the sum
+
+    printInt(doubleSum); // Output the result
+    return doubleSum;
+}
+
+
+// Function to display results with additional logic
+func void displayResult(int result) {
+    int localCopy;
+
+    // Copy result to local variable and perform operations
+    localCopy = result;
+    localCopy = localCopy + 1;
+
+    // Mock display operation
+    localCopy = localCopy * 3;
+    printInt(localCopy); // Print modified result
+}
+
+
+// Function to multiply two integers with added complexity
+func int multiply(int x, int y) {
+    int product;
+    int square;
+    int tempResult;
+
+    product = x * y;  // Compute product
+    square = x * x;   // Compute square of x
+    tempResult = product + square;  // Combine results
+
+    printInt(tempResult); // Print multiplication result
+    return tempResult;
+}
+
+
+// Function to calculate the factorial of a number using a while loop
+func int factorial(int n) {
+    // Initialize result to 1 (factorial of 0 or 1 is 1)
+    int result;  
+    int temp;
+    temp = n;
+    result = 1;
+    
+    while (temp > 1) {
+        result = result * temp;  // Multiply result by n
+        printInt(result); // Print intermediate factorial value
+        temp = temp - 1;  // Decrement n
+    }
+
+    return result;
+}
+
+
+int localInt;     // Local integer
+float localFloat; // Local float
+int i;            // Loop counter
+int result;       // Result variable
+int temp;         // Temporary variable for operations
+int globalInt;
+string globalChar;
+float globalFloat;
+int temp2;
+int primeCheck;
+
+// Variable initialization
+localInt = 15;
+localFloat = 3.7;
+globalInt = 20;
+globalChar = "C";
+globalFloat = 5.6;
+
+// Print initial global values
+printInt(globalInt);
+printChar(globalChar);
+printFloat(globalFloat);
+
+result = (localInt * 2 + 3) / (5 - 2) + globalInt;
+
+// If statement
+if (result > 10) {
+    temp = result * 2;  // Additional computation
+    displayResult(temp);
 } else {
-
-    c = c+5;
+    temp = result - 1;
+    temp = temp + 3;
+    displayResult(temp);
 }
 
-while (d >= 3 || c < 2 && c == 4){
-    c = c+6d;
+// While loop with nested logic
+i = 0;
+while (i < 10) {
+    temp2 = i + 1;
+    result = multiply(i, temp2);  // Function call inside loop
+
+    // If inside while
+    if (result > 20) {
+        globalInt = result + 1;  // Update global variable
+
+    } else {
+        globalInt = globalInt + 1;  // Increment global variable
+    }
+
+    printInt(i); // Print loop counter
+    i = i + 1;
 }
+
+
+// Call factorial function
+result = factorial(5);
+printInt(result); // Print final factorial result
+
+// Additional redundant computation for optimization analysis
+temp = 5 * 4; // Constant folding opportunity
+result = temp + 10;
+printInt(result); // Print final redundant computation
+
+// Final function call
+result = computeSum(localInt, 20);
+displayResult(result);

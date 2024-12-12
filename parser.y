@@ -7,6 +7,7 @@
 #include "semantic.h"
 #include "optimizer.h"
 #include "codeGenerator.h"
+#include <time.h> // Include the time.h header
 extern int yylex();
 extern int yyparse();
 extern FILE* yyin;
@@ -1109,6 +1110,9 @@ Expr:
 %%
 
 int main() {
+
+     // Record start time
+    clock_t start_time = clock();
     outer_table = create_outer_table(10);
     insert_scope(outer_table, current_scope, 10, "void");
     current_table = malloc(sizeof(SymbolTable));
@@ -1158,6 +1162,18 @@ int main() {
     //Freeing the tree
     fclose(yyin);
     print_table(outer_table);
+    // Record end time
+
+    clock_t end_time = clock();
+
+    // Calculate and display elapsed time
+
+    double elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+
+    printf("Compilation time: %.4f seconds\n", elapsed_time);
+
+    return 0;
+
 
 
     
