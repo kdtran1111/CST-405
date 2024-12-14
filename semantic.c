@@ -12,6 +12,8 @@ int opChecker =0 ; // variable to check if the op is a boolean operator, for lab
 SymbolTable* symbol_Table;
 int paramCounter = 0; // Variable to keep track registers for parameters
 
+
+char* cmpHolder; // variable to temporarily hold a register such as t3= t2 - t1 for conditions 
 //variable for if statement tracking purpose
 char* labelTrue;
 char* labelFalse;
@@ -25,6 +27,7 @@ char* elseIfLabelTrue;
 char* elseIfLabelFalse;
 
 
+
 //variable for else statement tracking purpose
 char* elseLabelTrue;
 char* elseLabelFalse;
@@ -32,7 +35,8 @@ char* elseLabelFalse;
 //Variable for while 
 char* whileStart;
 char* whileEnd;
-
+char* whileTrue;
+int isWhile = 0; //chechk if we traversing while loop, 0 for no and 1 for yes
 int tempIndex;
 int tempVars[20];
 int paramVars[3];
@@ -1169,16 +1173,25 @@ void semanticAnalysis(ASTNode* node, OuterSymbolTable* outer_table_semantic) {
 
             break;
         case NodeType_WhileLoop:
+            isWhile=1;
             whileStart = createTempLabel();
             whileEnd = (char*)malloc(strlen(whileStart) + 1);
+            whileTrue = (char*)malloc(strlen(whileStart) + 6); // +6 for "_true" and null-terminator
+            strcpy(whileTrue, whileStart);  // Initialize `whileTrue` with `whileStart`
+            strcat(whileTrue, "_true");    // Append "_true"
             strcpy(whileEnd, whileStart); 
-            whileStart = strcat(whileStart, "_true");
+           
+            whileStart = strcat(whileStart, "_start");
             whileEnd = strcat(whileEnd, "_end");
-            semanticAnalysis(node->WhileLoop.ConditionList ,outer_table_semantic);
+            labelTrue = whileTrue;
+            labelFalse = whileEnd;
             appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,whileStart));
+            semanticAnalysis(node->WhileLoop.ConditionList ,outer_table_semantic);
+            appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,whileTrue));
             semanticAnalysis(node->WhileLoop.StmntList,outer_table_semantic); // evaluate the content inside the block
             appendTAC(&tacHead, createTACSemantic(NULL,whileStart,NULL,NULL));
             appendTAC(&tacHead, createTACSemantic(NULL,NULL,NULL,whileEnd));
+            isWhile=0;
             break;
         default:
             break;
@@ -1229,7 +1242,7 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
    
     
    
-   
+  
    
     if (structMemberAssignment !=0 ){
             printf("strucmemberAssignment is; %d, memberId: %s, structID: %s\n", structMemberAssignment,structMemberIDSymbol->id, structID);
@@ -1442,7 +1455,14 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
             if (tempResult){
             //if(strcmp(newTac->result, tempResult) == 0){
                 if(expr->Expr.right != NULL && expr->Expr.right->type!=NodeType_Expr){
+                    if (expr->Expr.right->type== NodeType_SimpleStructMember){
+                        symbol = getSymbol(symbol_Table,expr->Expr.right->SimpleStructMember.id);
+                        printf("struct id is: %s , symbol id is: %s\n", expr->Expr.right->SimpleStructMember.id, symbol->id);
+                        newTac->arg2 = createOperand(expr->Expr.right, symbol->value.structValue);
+
+                    } else{
                     newTac->arg2 = createOperand(expr->Expr.right, symbol_Table); // Right operand (e.g., t1 for y)
+                    }
                     fprintf(stdout, "newTac->arg2 is:  %s in if Expr.right!=NULL \n", newTac->arg2);// DEbug
                 } else {
                     newTac->arg2 = strdup(symbol->tempVar);
@@ -1475,7 +1495,8 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
              //   updateRegister(symbol_Table, currentID, tempResult);
             //} else {
               //  printf("generate in the else\n");
-                updateRegister(symbol_Table, currentID, newTac->result);
+            updateRegister(symbol_Table, currentID, newTac->result);
+            printf("curr_scope is: %s \n", curr_scope);
            // }
             
 
@@ -1534,9 +1555,20 @@ TAC* generateTACForExpr(ASTNode* expr, OuterSymbolTable* outer_table) {
 
 char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
     char* operand = (char*)malloc(32 * sizeof(char));
-    Symbol* symbol = getSymbol(symbol_table, currentID);
+    Symbol* symbol;
+    if (node->type == NodeType_SimpleStructMember){
+
+        symbol =getSymbol(symbol_table, node->SimpleStructMember.member_id);
+        if (symbol!=NULL){
+            printf("sth and symbol id is: %s\n", symbol->id);
+        }
+    } else {
+        symbol = getSymbol(symbol_table, currentID);
+    }
+    
     switch (node->type) {
         case NodeType_SimpleID: {
+            
             Symbol* symbol = getSymbol(symbol_table, node->SimpleID.id); //------
             if (symbol != NULL && symbol->tempVar != NULL) {
                 strcpy(operand, symbol->tempVar);
@@ -1553,7 +1585,7 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
             break;
         }
         case NodeType_SimpleExpr:
-            
+            printf("in simpleexpr:\n");
             if (strcmp(symbol->type_str, "float_array")==0 || strcmp(symbol->type_str, "float") ==0) {
             printf("1\n");
             snprintf(operand, 32, "%f", (float)node->SimpleExpr.value);
@@ -1563,6 +1595,7 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
             }
             break;
         case NodeType_SimpleFloat: { // New case for SimpleFloat
+        
             if (strcmp(symbol->type_str, "int_array")==0 || strcmp(symbol->type_str, "int") ==0) {
                 printf("3\n");
             snprintf(operand, 32, "%d", (int)node->SimpleFloat.value);
@@ -1574,7 +1607,7 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
             break;
         }
         case NodeType_SimpleString: {
-      
+            
             if (strcmp(symbol->type_str, "string_array")==0 || strcmp(symbol->type_str, "string") ==0){
                 snprintf(operand, 32, "%s", node->SimpleString.value);
                
@@ -1586,17 +1619,20 @@ char* createOperand(ASTNode* node, SymbolTable* symbol_table) {
         }
         case NodeType_SimpleStructMember:
         {   
+            
+            printf("struct tempVar: %s\n", symbol->tempVar);
             char* tempStructRegister;
-            snprintf(operand, 32, "%s", structMemberIDSymbol->tempVar);
+            snprintf(operand, 32, "%s", symbol->tempVar);
 
             break;
         }
-        case NodeType_SimpleArrIndex:
-            
+        case NodeType_SimpleArrIndex:{
+            Symbol* symbol = getSymbol(symbol_table,node->SimpleArrIndex.id);
+            printf("symbol info--- id: %s,  type string:%s, arrayDeclVal: %s --- arrayIndexID: %s\n", symbol->id,symbol->type_str, symbol->arrayDeclVar, node->SimpleArrIndex.id);
             snprintf(operand, 32, "%s[%d]", symbol->arrayDeclVar,node->SimpleArrIndex.index);
             
             break;
-
+        }
         default:
             strcpy(operand, "");
             break;
@@ -1959,7 +1995,7 @@ void generateTACForNode(ASTNode* node, TAC** tacList, char* labelFalse, char* la
             
             appendTAC(tacList, createTACSemantic("load",buffer, NULL, temp2));
             //check to see if the condition equal by subtracting
-            char* cmpHolder = createTempVar(); // placeholder for comparison. eg. t2 = t1 -t0 
+            cmpHolder = createTempVar(); // placeholder for comparison. eg. t2 = t1 -t0 
             appendTAC(tacList, createTACSemantic("-",temp1,temp2, cmpHolder) );
             
 
@@ -2022,7 +2058,6 @@ TAC* createTACSemantic(char* op, char* arg1, char* arg2, char* result) {
     return node;
 }
 
-
 void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* labelTrue, char* cmpHolder) {
     // Compare the operator string
     if (strcmp(node->Condition.ComparisonOperator, "==") == 0) {
@@ -2030,11 +2065,14 @@ void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* lab
         printf("== is okay\n");
 
         if (tempBoolOp != NULL && strcmp(tempBoolOp, "OR") == 0) {
+            printf("into OR\n");
             opChecker = 1;
             appendTAC(tacList, createTACSemantic("==", "0", labelTrue, cmpHolder));
-        }
-
-        if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+        } else if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+            printf("into AND\n");
+            opChecker = 1;
+            appendTAC(tacList, createTACSemantic("!=", "0", labelFalse, cmpHolder));
+        } else {
             opChecker = 1;
             appendTAC(tacList, createTACSemantic("!=", "0", labelFalse, cmpHolder));
         }
@@ -2044,11 +2082,14 @@ void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* lab
         printf("!= is okay\n");
 
         if (tempBoolOp != NULL && strcmp(tempBoolOp, "OR") == 0) {
+            printf("into OR\n");
             opChecker = 1;
             appendTAC(tacList, createTACSemantic("!=", "0", labelTrue, cmpHolder));
-        }
-
-        if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+        } else if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+            printf("into AND\n");
+            opChecker = 1;
+            appendTAC(tacList, createTACSemantic("==", "0", labelFalse, cmpHolder));
+        } else {
             opChecker = 1;
             appendTAC(tacList, createTACSemantic("==", "0", labelFalse, cmpHolder));
         }
@@ -2058,11 +2099,14 @@ void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* lab
         printf("> is okay\n");
 
         if (tempBoolOp != NULL && strcmp(tempBoolOp, "OR") == 0) {
+            printf("into OR\n");
             opChecker = 1;
             appendTAC(tacList, createTACSemantic(">", "0", labelTrue, cmpHolder));
-        }
-
-        if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+        } else if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+            printf("into AND\n");
+            opChecker = 1;
+            appendTAC(tacList, createTACSemantic("<=", "0", labelFalse, cmpHolder));
+        } else {
             opChecker = 1;
             appendTAC(tacList, createTACSemantic("<=", "0", labelFalse, cmpHolder));
         }
@@ -2072,11 +2116,14 @@ void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* lab
         printf("< is okay\n");
 
         if (tempBoolOp != NULL && strcmp(tempBoolOp, "OR") == 0) {
+            printf("into OR\n");
             opChecker = 1;
             appendTAC(tacList, createTACSemantic("<", "0", labelTrue, cmpHolder));
-        }
-
-        if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+        } else if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+            printf("into AND\n");
+            opChecker = 1;
+            appendTAC(tacList, createTACSemantic(">=", "0", labelFalse, cmpHolder));
+        } else {
             opChecker = 1;
             appendTAC(tacList, createTACSemantic(">=", "0", labelFalse, cmpHolder));
         }
@@ -2086,11 +2133,14 @@ void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* lab
         printf("<= is okay\n");
 
         if (tempBoolOp != NULL && strcmp(tempBoolOp, "OR") == 0) {
+            printf("into OR\n");
             opChecker = 1;
             appendTAC(tacList, createTACSemantic("<=", "0", labelTrue, cmpHolder));
-        }
-
-        if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+        } else if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+            printf("into AND\n");
+            opChecker = 1;
+            appendTAC(tacList, createTACSemantic(">", "0", labelFalse, cmpHolder));
+        } else {
             opChecker = 1;
             appendTAC(tacList, createTACSemantic(">", "0", labelFalse, cmpHolder));
         }
@@ -2100,11 +2150,14 @@ void createTACForLabel(TAC** tacList, ASTNode* node, char* labelFalse, char* lab
         printf(">= is okay\n");
 
         if (tempBoolOp != NULL && strcmp(tempBoolOp, "OR") == 0) {
+            printf("into OR\n");
             opChecker = 1;
             appendTAC(tacList, createTACSemantic(">=", "0", labelTrue, cmpHolder));
-        }
-
-        if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+        } else if (tempBoolOp != NULL && strcmp(tempBoolOp, "AND") == 0) {
+            printf("into AND\n");
+            opChecker = 1;
+            appendTAC(tacList, createTACSemantic("<", "0", labelFalse, cmpHolder));
+        } else {
             opChecker = 1;
             appendTAC(tacList, createTACSemantic("<", "0", labelFalse, cmpHolder));
         }
