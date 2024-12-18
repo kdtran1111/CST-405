@@ -1158,6 +1158,8 @@ int main() {
 
     printf("Writing TAC into TAC.ir successful\n");
     }
+
+    executeCodeGenerator("TAC.ir", "output.asm");
     
     //Freeing the tree
     fclose(yyin);
